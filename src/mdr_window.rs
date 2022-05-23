@@ -5,8 +5,8 @@ use winit::{
 };
 
 pub struct MdrWindow {
+  pub event_loop: EventLoop<()>,
   window: Window,
-  event_loop: EventLoop<()>,
 
   should_close: bool,
 }
