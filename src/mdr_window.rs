@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
 use vulkano::{
-  format::Format, instance::Instance, pipeline::graphics::viewport::Viewport,
-  render_pass::RenderPass, swapchain::Surface,
+  format::Format,
+  instance::Instance,
+  pipeline::graphics::viewport::Viewport,
+  render_pass::{Framebuffer, RenderPass},
+  swapchain::Surface,
 };
 use vulkano_win::VkSurfaceBuild;
 
@@ -64,12 +67,18 @@ impl MdrWindow {
     let swapchain = self
       .swapchain
       .as_ref()
-      .expect("Tried to create render pass before initializing swapchain.");
+      .expect("Tried to get render pass before initializing swapchain.");
 
     return swapchain.create_render_pass();
   }
 
-  pub fn get_image_views(&self) {}
+  pub fn get_frame_buffers(&self, render_pass: Arc<RenderPass>) -> Vec<Arc<Framebuffer>> {
+    let swapchain = self
+      .swapchain
+      .as_ref()
+      .expect("Tried to get framebuffers before initializing swapchain.");
+    return swapchain.create_frame_buffers(render_pass);
+  }
 
   pub fn surface(&self) -> Arc<Surface<Window>> {
     return self.surface.clone();

@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use vulkano::device::Device;
 use vulkano::format::Format;
+use vulkano::image::view::ImageView;
 use vulkano::image::{ImageUsage, SwapchainImage};
-use vulkano::render_pass::RenderPass;
+use vulkano::render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass};
 use vulkano::swapchain::{Surface, SurfaceCapabilities, Swapchain, SwapchainCreateInfo};
 
 use winit::dpi::PhysicalSize;
@@ -92,6 +93,24 @@ impl MdrSwapchain {
       }
     )
     .unwrap();
+  }
+
+  pub fn create_frame_buffers(&self, render_pass: Arc<RenderPass>) -> Vec<Arc<Framebuffer>> {
+    return self
+      .images
+      .iter()
+      .map(|image| {
+        let view = ImageView::new_default(image.clone()).unwrap();
+        Framebuffer::new(
+          render_pass.clone(),
+          FramebufferCreateInfo {
+            attachments: vec![view],
+            ..Default::default()
+          },
+        )
+        .unwrap()
+      })
+      .collect::<Vec<_>>();
   }
 
   pub fn image_format(&self) -> Format {
