@@ -3,6 +3,7 @@ use std::sync::Arc;
 use vulkano::device::Device;
 use vulkano::format::Format;
 use vulkano::image::{ImageUsage, SwapchainImage};
+use vulkano::render_pass::RenderPass;
 use vulkano::swapchain::{Surface, SurfaceCapabilities, Swapchain, SwapchainCreateInfo};
 
 use winit::dpi::PhysicalSize;
@@ -68,6 +69,29 @@ impl MdrSwapchain {
       self.image_format,
       &self.surface_capabilities,
     );
+  }
+
+  pub fn create_render_pass(&self) -> Arc<RenderPass> {
+    let image_format = self
+      .image_format
+      .expect("No swapchain image format available, was the swapchain initialized?");
+
+    return vulkano::single_pass_renderpass!(
+      self.device.logical_device(),
+      attachments: {
+        color: {
+          load: Clear,
+          store: Store,
+          format: image_format,
+          samples: 1,
+        }
+      },
+      pass: {
+        color: [color],
+        depth_stencil: {}
+      }
+    )
+    .unwrap();
   }
 
   pub fn image_format(&self) -> Format {

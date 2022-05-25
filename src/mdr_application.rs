@@ -47,7 +47,7 @@ impl MdrApp {
     let image_format = window.swapchain_image_format();
     // Create viewport and render pass
     let viewport = window.create_viewport();
-    let render_pass = Self::create_render_pass(&device, image_format);
+    let render_pass = window.get_render_pass();
     // Create pipeline
     let pipeline = MdrPipeline::new(&device, render_pass, viewport);
     // Pipeline layout
@@ -73,25 +73,6 @@ impl MdrApp {
         }
         _ => (),
       })
-  }
-
-  fn create_render_pass(device: &Arc<MdrDevice>, image_format: Format) -> Arc<RenderPass> {
-    return vulkano::single_pass_renderpass!(
-      device.logical_device(),
-      attachments: {
-        color: {
-          load: Clear,
-          store: Store,
-          format: image_format,
-          samples: 1,
-        }
-      },
-      pass: {
-        color: [color],
-        depth_stencil: {}
-      }
-    )
-    .unwrap();
   }
 
   fn create_pipeline_layout(&self) {}
