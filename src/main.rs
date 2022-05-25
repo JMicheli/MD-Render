@@ -1,31 +1,15 @@
+mod mdr_application;
+mod mdr_device;
+mod mdr_pipeline;
+mod mdr_swapchain;
 mod mdr_window;
-
-use winit::{
-  event::{Event, WindowEvent},
-  event_loop::ControlFlow,
-};
-
-use mdr_window::MdrWindow;
-
-const WIDTH: u32 = 800;
-const HEIGHT: u32 = 600;
 
 fn main() {
   println!("Starting test");
 
-  let window = MdrWindow::new(WIDTH, HEIGHT, "MD Renderer Test");
+  let app = mdr_application::MdrApp::new("MD Renderer Test");
 
-  window.event_loop.run(move |event, _, control_flow| {
-    *control_flow = ControlFlow::Wait;
+  app.run();
 
-    match event {
-      Event::WindowEvent {
-        window_id: _,
-        event: WindowEvent::CloseRequested,
-      } => *control_flow = ControlFlow::Exit,
-      _ => (),
-    }
-  });
-
-  println!("Exiting main");
+  println!("Exiting test");
 }

@@ -1,1 +1,5 @@
+# Compiled rust code
 target/
+
+# Compiled shaders
+*.spv
