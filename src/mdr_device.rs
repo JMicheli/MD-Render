@@ -10,21 +10,25 @@ use vulkano::{
 };
 use winit::window::Window;
 
+use crate::mdr_window::MdrWindow;
+
 pub struct MdrDevice {
-  logical_device: Arc<Device>,
-  queue: Arc<Queue>,
+  pub vk_logical_device: Arc<Device>,
+  pub vk_queue: Arc<Queue>,
 }
 
 impl MdrDevice {
-  pub fn new(instance: Arc<Instance>, surface: Arc<Surface<Window>>) -> Arc<Self> {
+  pub fn new(instance: &Arc<Instance>, window: &MdrWindow) -> Arc<Self> {
+    // Get surface from window
+    let surface = &window.surface;
     // Pick physical device
-    let (physical_device, queue_family) = Self::pick_physical_device(&instance, surface.clone());
+    let (physical_device, queue_family) = Self::pick_physical_device(instance, surface.clone());
     // Create logical device
     let device_extensions = DeviceExtensions {
       khr_swapchain: true,
       ..DeviceExtensions::none()
     };
-    let (logical_device, mut queues) = Device::new(
+    let (vk_logical_device, mut queues) = Device::new(
       physical_device,
       DeviceCreateInfo {
         queue_create_infos: vec![QueueCreateInfo::family(queue_family)],
@@ -37,18 +41,16 @@ impl MdrDevice {
     .expect("Failed to create logical device");
 
     // Get queue
-    let queue = queues.next().unwrap();
-    // Create command pool
-    // Might not be necessary?
+    let vk_queue = queues.next().unwrap();
 
     return Arc::new(Self {
-      logical_device,
-      queue,
+      vk_logical_device,
+      vk_queue,
     });
   }
 
-  pub fn logical_device(&self) -> Arc<Device> {
-    return self.logical_device.clone();
+  pub fn queue_family(&self) -> QueueFamily {
+    return self.vk_queue.family();
   }
 
   fn pick_physical_device(

@@ -12,7 +12,7 @@ use vulkano::{
     GraphicsPipeline,
   },
   render_pass::{RenderPass, Subpass},
-  shader::{ShaderCreationError, ShaderModule},
+  shader::ShaderModule,
 };
 
 use crate::mdr_device::MdrDevice;
@@ -33,64 +33,50 @@ mod fragment_shader {
 #[repr(C)]
 #[derive(Default, Copy, Clone, Zeroable, Pod)]
 pub struct Vertex {
-  position: [f32; 2],
+  pub position: [f32; 2],
 }
 
-vulkano::impl_vertex!(Vertex, position);
-
 pub struct MdrPipeline {
-  logical_device: Arc<Device>,
+  pub vk_graphics_pipeline: Arc<GraphicsPipeline>,
+
   vertex_shader: Arc<ShaderModule>,
   fragment_shader: Arc<ShaderModule>,
-
-  graphics_pipeline: Arc<GraphicsPipeline>,
 }
 
 impl MdrPipeline {
-  pub fn new(device: &MdrDevice, render_pass: Arc<RenderPass>, viewport: Viewport) -> Self {
+  pub fn new(device: &MdrDevice, render_pass: &Arc<RenderPass>, viewport: &Viewport) -> Arc<Self> {
     // Load shaders
     let (vs, fs) = Self::load_shaders(device);
-    // Get graphics pipeline
-    let graphics_pipeline = Self::get_graphics_pipeline(
-      device.logical_device(),
-      vs.clone(),
-      fs.clone(),
-      render_pass,
-      viewport,
-    );
 
-    Self {
-      logical_device: device.logical_device(),
+    // Get graphics pipeline
+    let vk_graphics_pipeline = GraphicsPipeline::start()
+      .vertex_input_state(BuffersDefinition::new().vertex::<Vertex>())
+      .vertex_shader(vs.entry_point("main").unwrap(), ())
+      .input_assembly_state(InputAssemblyState::new())
+      .viewport_state(ViewportState::viewport_fixed_scissor_irrelevant([
+        viewport.clone()
+      ]))
+      .fragment_shader(fs.entry_point("main").unwrap(), ())
+      .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
+      .build(device.vk_logical_device.clone())
+      .unwrap();
+
+    return Arc::new(Self {
+      vk_graphics_pipeline,
       vertex_shader: vs,
       fragment_shader: fs,
-      graphics_pipeline,
-    }
+    });
   }
 
   fn load_shaders(device: &MdrDevice) -> (Arc<ShaderModule>, Arc<ShaderModule>) {
     let vertex_shader_module =
-      vertex_shader::load(device.logical_device()).expect("Failed to load vertex shader");
-    let fragment_shader_module =
-      fragment_shader::load(device.logical_device()).expect("Failed to load fragment shader");
+      vertex_shader::load(device.vk_logical_device.clone()).expect("Failed to load vertex shader");
+    let fragment_shader_module = fragment_shader::load(device.vk_logical_device.clone())
+      .expect("Failed to load fragment shader");
 
     return (vertex_shader_module, fragment_shader_module);
   }
 
-  fn get_graphics_pipeline(
-    device: Arc<Device>,
-    vs: Arc<ShaderModule>,
-    fs: Arc<ShaderModule>,
-    render_pass: Arc<RenderPass>,
-    viewport: Viewport,
-  ) -> Arc<GraphicsPipeline> {
-    GraphicsPipeline::start()
-      .vertex_input_state(BuffersDefinition::new().vertex::<Vertex>())
-      .vertex_shader(vs.entry_point("main").unwrap(), ())
-      .input_assembly_state(InputAssemblyState::new())
-      .viewport_state(ViewportState::viewport_fixed_scissor_irrelevant([viewport]))
-      .fragment_shader(fs.entry_point("main").unwrap(), ())
-      .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
-      .build(device.clone())
-      .unwrap()
-  }
+  // TODO
+  pub fn regenerate_graphics_pipeline(&self) {}
 }
