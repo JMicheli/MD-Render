@@ -49,6 +49,7 @@ impl MdrEngine {
       width: 800,
       height: 600,
       title: name.unwrap_or("MD Renderer"),
+      resizable: true,
     };
     let window = MdrWindow::new(&instance, &event_loop, &window_options);
 

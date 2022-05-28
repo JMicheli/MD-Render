@@ -12,6 +12,7 @@ use winit::{
 pub struct MdrWindowOptions<'a> {
   pub width: u32,
   pub height: u32,
+  pub resizable: bool,
   pub title: &'a str,
 }
 
@@ -32,7 +33,7 @@ impl MdrWindow {
         f64::from(options.width),
         f64::from(options.height),
       ))
-      .with_resizable(false)
+      .with_resizable(options.resizable)
       .build_vk_surface(event_loop, instance.clone())
       .unwrap();
 
