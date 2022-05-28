@@ -66,16 +66,19 @@ impl MdrEngine {
     // Create pipeline
     let pipeline = MdrPipeline::new(&device, &render_pass, &viewport);
 
-    // Generate test vertex data
-    vulkano::impl_vertex!(Vertex, position);
+    // Generate triangle vertex data
+    vulkano::impl_vertex!(Vertex, position, color);
     let v1 = Vertex {
       position: [-0.5, 0.5],
+      color: [1.0, 0.0, 0.0, 1.0],
     };
     let v2 = Vertex {
       position: [0.0, -0.5],
+      color: [0.0, 1.0, 0.0, 1.0],
     };
     let v3 = Vertex {
       position: [0.5, 0.5],
+      color: [0.0, 0.0, 1.0, 1.0],
     };
     let vertex_buffer = CpuAccessibleBuffer::from_iter(
       device.vk_logical_device.clone(),
@@ -289,12 +292,9 @@ impl MdrEngine {
         )
         .unwrap();
 
+        let clear_color = vec![[0.0, 0.0, 0.0, 1.0].into()];
         builder
-          .begin_render_pass(
-            framebuffer.clone(),
-            SubpassContents::Inline,
-            vec![[0.0, 0.0, 1.0, 1.0].into()],
-          )
+          .begin_render_pass(framebuffer.clone(), SubpassContents::Inline, clear_color)
           .unwrap()
           .bind_pipeline_graphics(pipeline.vk_graphics_pipeline.clone())
           .bind_vertex_buffers(0, vertex_buffer.clone())

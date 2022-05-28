@@ -5,12 +5,12 @@ mod mdr_swapchain;
 mod mdr_window;
 
 fn main() {
-  println!("Starting test");
+  println!("Starting MD Renderer");
 
   let engine_name = Some("MD Renderer Test");
   let engine = mdr_engine::MdrEngine::new(engine_name);
 
   engine.run();
 
-  println!("Exiting test");
+  println!("Exiting main");
 }

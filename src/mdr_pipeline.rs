@@ -33,6 +33,7 @@ mod fragment_shader {
 #[derive(Default, Copy, Clone, Zeroable, Pod)]
 pub struct Vertex {
   pub position: [f32; 2],
+  pub color: [f32; 4],
 }
 
 pub struct MdrPipeline {
