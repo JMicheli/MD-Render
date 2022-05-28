@@ -68,13 +68,13 @@ impl MdrEngine {
     // Generate test vertex data
     vulkano::impl_vertex!(Vertex, position);
     let v1 = Vertex {
-      position: [-0.5, -0.5],
+      position: [-0.5, 0.5],
     };
     let v2 = Vertex {
-      position: [0.0, 0.5],
+      position: [0.0, -0.5],
     };
     let v3 = Vertex {
-      position: [0.5, -0.5],
+      position: [0.5, 0.5],
     };
     let vertex_buffer = CpuAccessibleBuffer::from_iter(
       device.vk_logical_device.clone(),

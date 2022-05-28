@@ -2,7 +2,6 @@ use bytemuck::{Pod, Zeroable};
 use std::sync::Arc;
 
 use vulkano::{
-  device::Device,
   pipeline::{
     graphics::{
       input_assembly::InputAssemblyState,
@@ -38,9 +37,6 @@ pub struct Vertex {
 
 pub struct MdrPipeline {
   pub vk_graphics_pipeline: Arc<GraphicsPipeline>,
-
-  vertex_shader: Arc<ShaderModule>,
-  fragment_shader: Arc<ShaderModule>,
 }
 
 impl MdrPipeline {
@@ -63,8 +59,6 @@ impl MdrPipeline {
 
     return Arc::new(Self {
       vk_graphics_pipeline,
-      vertex_shader: vs,
-      fragment_shader: fs,
     });
   }
 

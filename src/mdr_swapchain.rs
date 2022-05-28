@@ -2,12 +2,9 @@ use std::sync::Arc;
 
 use vulkano::device::Device;
 use vulkano::format::Format;
-use vulkano::image::view::ImageView;
 use vulkano::image::{ImageUsage, SwapchainImage};
-use vulkano::render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass};
 use vulkano::swapchain::{
-  self, AcquireError, Surface, SurfaceCapabilities, Swapchain, SwapchainAcquireFuture,
-  SwapchainCreateInfo,
+  self, AcquireError, SurfaceCapabilities, Swapchain, SwapchainAcquireFuture, SwapchainCreateInfo,
 };
 
 use winit::dpi::PhysicalSize;
@@ -21,8 +18,6 @@ pub struct MdrSwapchain {
   vk_logical_device: Arc<Device>,
   pub vk_swapchain: Arc<Swapchain<Window>>,
   pub vk_images: Vec<Arc<SwapchainImage<Window>>>,
-
-  surface_capabilities: SurfaceCapabilities,
 }
 
 impl MdrSwapchain {
@@ -69,7 +64,6 @@ impl MdrSwapchain {
       vk_swapchain,
       vk_image_format,
       vk_images,
-      surface_capabilities,
     }
   }
 
@@ -79,7 +73,7 @@ impl MdrSwapchain {
 
     // Recreate swapchain
     let mut recreate_info = self.vk_swapchain.create_info();
-    recreate_info.image_extent = vk_surface.window().inner_size().into();
+    recreate_info.image_extent = dimensions.into();
     (self.vk_swapchain, self.vk_images) = self
       .vk_swapchain
       .recreate(recreate_info)
