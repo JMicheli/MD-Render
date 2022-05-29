@@ -1,8 +1,7 @@
-mod mdr_device;
-mod mdr_engine;
-mod mdr_pipeline;
-mod mdr_swapchain;
-mod mdr_window;
+mod mdr_core;
+mod mdr_scene;
+
+use mdr_core::MdrEngine;
 
 // Consts
 const DEBUG_ENABLED: bool = true;
@@ -11,7 +10,7 @@ fn main() {
   println!("Starting MD Renderer");
 
   let engine_name = Some("MD Renderer Test");
-  let engine = mdr_engine::MdrEngine::new(DEBUG_ENABLED, engine_name);
+  let engine = MdrEngine::new(DEBUG_ENABLED, engine_name);
 
   engine.run();
 

@@ -10,7 +10,7 @@ use vulkano::{
 };
 use winit::window::Window;
 
-use crate::mdr_window::MdrWindow;
+use super::mdr_window::MdrWindow;
 
 pub struct MdrDevice {
   pub vk_logical_device: Arc<Device>,

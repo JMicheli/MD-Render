@@ -10,8 +10,7 @@ use vulkano::swapchain::{
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
-use crate::mdr_device::MdrDevice;
-use crate::mdr_window::MdrWindow;
+use super::{mdr_device::MdrDevice, mdr_window::MdrWindow};
 
 pub struct MdrSwapchain {
   vk_image_format: Option<Format>,

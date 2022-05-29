@@ -21,7 +21,7 @@ use winit::{
   event_loop::{ControlFlow, EventLoop},
 };
 
-use crate::{
+use super::{
   mdr_device::MdrDevice,
   mdr_pipeline::{MdrPipeline, Vertex},
   mdr_swapchain::MdrSwapchain,

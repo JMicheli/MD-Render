@@ -14,7 +14,7 @@ use vulkano::{
   shader::ShaderModule,
 };
 
-use crate::mdr_device::MdrDevice;
+use super::mdr_device::MdrDevice;
 
 mod vertex_shader {
   vulkano_shaders::shader! {
