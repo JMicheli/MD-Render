@@ -7,7 +7,10 @@ use vulkano::{
   },
   format::Format,
   image::view::ImageView,
-  instance::{Instance, InstanceCreateInfo},
+  instance::{
+    debug::{DebugCallback, DebugCallbackCreationError, MessageSeverity, MessageType},
+    layers_list, Instance, InstanceCreateInfo, InstanceExtensions,
+  },
   pipeline::graphics::viewport::Viewport,
   render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass},
   swapchain::AcquireError,
@@ -27,6 +30,7 @@ use crate::{
 
 pub struct MdrEngine {
   instance: Arc<Instance>,
+  debug_callback: Option<DebugCallback>,
   device: Arc<MdrDevice>,
   event_loop: EventLoop<()>,
   window: MdrWindow,
@@ -38,9 +42,18 @@ pub struct MdrEngine {
 }
 
 impl MdrEngine {
-  pub fn new(name: Option<&str>) -> Self {
+  pub fn new(debug_enabled: bool, name: Option<&str>) -> Self {
     // Create a Vulkan instance with the required extensions.
-    let instance = Self::create_instance();
+    let instance = Self::create_instance(debug_enabled);
+    // Register debug callback if necessary
+    let debug_callback = {
+      if debug_enabled {
+        let callback = Self::register_debug_callback(&instance);
+        Some(callback)
+      } else {
+        None
+      }
+    };
 
     // Begin by creating the event loop
     let event_loop = EventLoop::new();
@@ -90,6 +103,7 @@ impl MdrEngine {
 
     Self {
       instance,
+      debug_callback,
       device,
       event_loop,
       window,
@@ -224,16 +238,100 @@ impl MdrEngine {
       })
   }
 
-  fn create_instance() -> Arc<Instance> {
+  fn create_instance(debug_enabled: bool) -> Arc<Instance> {
     // Get extensions needed to run a window
-    let required_extensions = vulkano_win::required_extensions();
+    let required_extensions = {
+      let mut extensions = vulkano_win::required_extensions();
 
-    // Create instance
+      // If debugging is enabled, add the debug utility extension
+      if debug_enabled {
+        let debug_extensions = InstanceExtensions {
+          ext_debug_utils: true,
+          ..InstanceExtensions::none()
+        };
+        extensions = extensions.union(&debug_extensions);
+      }
+
+      extensions
+    };
+
+    // Enable layers
+    let enabled_layers = {
+      let mut output_layers: Vec<String> = vec![];
+
+      // Ignore layers if not in debug mode
+      if debug_enabled {
+        // Print out available layers
+        let mut available_layers = layers_list().unwrap();
+        println!("Available debugging layers:");
+        while let Some(layer) = available_layers.next() {
+          println!("\t{}", layer.name());
+        }
+
+        // Os-specific layers
+        #[cfg(not(target_os = "macos"))]
+        output_layers.push("VK_LAYER_KHRONOS_validation".to_owned());
+        #[cfg(target_os = "macos")]
+        output_layers.push("VK_LAYER_KHRONOS_validation".to_owned());
+      }
+
+      output_layers
+    };
+
     return Instance::new(InstanceCreateInfo {
       enabled_extensions: required_extensions,
+      enabled_layers,
       ..Default::default()
     })
     .expect("Failed to create Vulkan instance.");
+  }
+
+  fn register_debug_callback(instance: &Arc<Instance>) -> DebugCallback {
+    let severity = MessageSeverity {
+      error: true,
+      warning: true,
+      information: true,
+      verbose: true,
+    };
+
+    let ty = MessageType::all();
+
+    return unsafe {
+      let callback = DebugCallback::new(instance, severity, ty, |message| {
+        let severity = if message.severity.error {
+          "error"
+        } else if message.severity.warning {
+          "warning"
+        } else if message.severity.information {
+          "information"
+        } else if message.severity.verbose {
+          "verbose"
+        } else {
+          panic!("No implementation for message severity");
+        };
+
+        let ty = if message.ty.general {
+          "general"
+        } else if message.ty.validation {
+          "validation"
+        } else if message.ty.performance {
+          "performance"
+        } else {
+          panic!("No implementation for message type");
+        };
+
+        println!(
+          "{} {} {}: {}",
+          message.layer_prefix.unwrap_or("Unknown Layer"),
+          ty,
+          severity,
+          message.description
+        );
+      })
+      .unwrap();
+
+      callback
+    };
   }
 
   fn create_render_pass(device: &MdrDevice, image_format: Format) -> Arc<RenderPass> {
