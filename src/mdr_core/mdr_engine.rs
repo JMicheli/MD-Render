@@ -8,7 +8,7 @@ use vulkano::{
   format::Format,
   image::view::ImageView,
   instance::{
-    debug::{DebugCallback, DebugCallbackCreationError, MessageSeverity, MessageType},
+    debug::{DebugCallback, MessageSeverity, MessageType},
     layers_list, Instance, InstanceCreateInfo, InstanceExtensions,
   },
   pipeline::graphics::viewport::Viewport,
@@ -153,6 +153,12 @@ impl MdrEngine {
           window_was_resized = true;
         }
         Event::MainEventsCleared => {
+          // Don't render if window is minimized
+          let screen_dimensions = self.window.dimensions();
+          if screen_dimensions.width == 0 && screen_dimensions.height == 0 {
+            return;
+          }
+
           // Resize/swapchain recreation logic
           if window_was_resized || should_recreate_swapchain {
             should_recreate_swapchain = false;
@@ -296,42 +302,38 @@ impl MdrEngine {
 
     let ty = MessageType::all();
 
-    return unsafe {
-      let callback = DebugCallback::new(instance, severity, ty, |message| {
-        let severity = if message.severity.error {
-          "error"
-        } else if message.severity.warning {
-          "warning"
-        } else if message.severity.information {
-          "information"
-        } else if message.severity.verbose {
-          "verbose"
-        } else {
-          panic!("No implementation for message severity");
-        };
+    return DebugCallback::new(instance, severity, ty, |message| {
+      let severity = if message.severity.error {
+        "error"
+      } else if message.severity.warning {
+        "warning"
+      } else if message.severity.information {
+        "information"
+      } else if message.severity.verbose {
+        "verbose"
+      } else {
+        panic!("No implementation for message severity");
+      };
 
-        let ty = if message.ty.general {
-          "general"
-        } else if message.ty.validation {
-          "validation"
-        } else if message.ty.performance {
-          "performance"
-        } else {
-          panic!("No implementation for message type");
-        };
+      let ty = if message.ty.general {
+        "general"
+      } else if message.ty.validation {
+        "validation"
+      } else if message.ty.performance {
+        "performance"
+      } else {
+        panic!("No implementation for message type");
+      };
 
-        println!(
-          "{} {} {}: {}",
-          message.layer_prefix.unwrap_or("Unknown Layer"),
-          ty,
-          severity,
-          message.description
-        );
-      })
-      .unwrap();
-
-      callback
-    };
+      println!(
+        "{} {} {}: {}",
+        message.layer_prefix.unwrap_or("Unknown Layer"),
+        ty,
+        severity,
+        message.description
+      );
+    })
+    .unwrap();
   }
 
   fn create_render_pass(device: &MdrDevice, image_format: Format) -> Arc<RenderPass> {
