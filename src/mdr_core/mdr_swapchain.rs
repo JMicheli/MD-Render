@@ -13,7 +13,7 @@ use super::{mdr_device::MdrDevice, mdr_window::MdrWindow};
 
 pub struct MdrSwapchain {
   vk_image_format: Option<Format>,
-  vk_logical_device: Arc<Device>,
+  pub vk_logical_device: Arc<Device>,
   pub vk_swapchain: Arc<Swapchain<Window>>,
   pub vk_images: Vec<Arc<SwapchainImage<Window>>>,
 }

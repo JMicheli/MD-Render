@@ -3,6 +3,7 @@ use std::sync::Arc;
 use vulkano::{
   pipeline::{
     graphics::{
+      depth_stencil::DepthStencilState,
       input_assembly::InputAssemblyState,
       vertex_input::BuffersDefinition,
       viewport::{Viewport, ViewportState},
@@ -47,6 +48,7 @@ impl MdrPipeline {
         viewport.clone()
       ]))
       .fragment_shader(fs.entry_point("main").unwrap(), ())
+      .depth_stencil_state(DepthStencilState::simple_depth_test())
       .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
       .build(device.vk_logical_device.clone())
       .unwrap();

@@ -1,12 +1,8 @@
 use std::sync::Arc;
 
 use vulkano::{
-  buffer::TypedBufferAccess,
-  command_buffer::{
-    AutoCommandBufferBuilder, CommandBufferUsage, PrimaryAutoCommandBuffer, SubpassContents,
-  },
   format::Format,
-  image::view::ImageView,
+  image::{view::ImageView, AttachmentImage, ImageAccess},
   instance::{
     debug::{DebugCallback, MessageSeverity, MessageType},
     layers_list, Instance, InstanceCreateInfo, InstanceExtensions,
@@ -22,6 +18,7 @@ use winit::{
 };
 
 use super::{
+  mdr_command_buffer::MdrCommandBuffer,
   mdr_device::MdrDevice,
   mdr_pipeline::MdrPipeline,
   mdr_swapchain::MdrSwapchain,
@@ -102,7 +99,7 @@ impl MdrEngine {
     // Create framebuffers and command buffers
     let mut framebuffers = Self::create_frame_buffers(&self.swapchain, &self.render_pass);
     let mut command_buffers =
-      Self::create_command_buffers(&self.device, &self.pipeline, &framebuffers, &self.mesh);
+      MdrCommandBuffer::new(&self.device, &self.pipeline, &framebuffers, &self.mesh);
 
     // Loop state variables
     let mut window_was_resized = false;
@@ -152,12 +149,8 @@ impl MdrEngine {
               // Set new viewport dimensions, recreate pipeline and command buffers
               self.viewport.dimensions = self.window.dimensions().into();
               self.pipeline = MdrPipeline::new(&self.device, &self.render_pass, &self.viewport);
-              command_buffers = Self::create_command_buffers(
-                &self.device,
-                &self.pipeline,
-                &framebuffers,
-                &self.mesh,
-              );
+              command_buffers =
+                MdrCommandBuffer::new(&self.device, &self.pipeline, &framebuffers, &self.mesh);
             }
           }
 
@@ -200,7 +193,7 @@ impl MdrEngine {
           let swapchain = &self.swapchain.vk_swapchain;
           let future = previous_frame_future
             .join(acquire_future)
-            .then_execute(queue.clone(), command_buffers[image_index].clone())
+            .then_execute(queue.clone(), command_buffers.get_primary(image_index))
             .unwrap()
             .then_swapchain_present(queue.clone(), swapchain.clone(), image_index)
             .then_signal_fence_and_flush();
@@ -324,11 +317,17 @@ impl MdrEngine {
           store: Store,
           format: image_format,
           samples: 1,
+        },
+        depth: {
+          load: Clear,
+          store: DontCare,
+          format: Format::D16_UNORM,
+          samples: 1,
         }
       },
       pass: {
         color: [color],
-        depth_stencil: {}
+        depth_stencil: {depth}
       }
     )
     .unwrap();
@@ -338,53 +337,29 @@ impl MdrEngine {
     swapchain: &MdrSwapchain,
     render_pass: &Arc<RenderPass>,
   ) -> Vec<Arc<Framebuffer>> {
+    let logical_device = &swapchain.vk_logical_device;
+    let dimensions = swapchain.vk_images[0].dimensions().width_height();
+    // Create depth buffer
+    let depth_buffer_image =
+      AttachmentImage::transient(logical_device.clone(), dimensions, Format::D16_UNORM).unwrap();
+    let depth_buffer_view = ImageView::new_default(depth_buffer_image).unwrap();
+
+    // Create and return framebuffers
     return swapchain
       .vk_images
       .iter()
       .map(|image| {
-        let view = ImageView::new_default(image.clone()).unwrap();
+        let color_view = ImageView::new_default(image.clone()).unwrap();
         Framebuffer::new(
           render_pass.clone(),
           FramebufferCreateInfo {
-            attachments: vec![view],
+            // Attach color and depth view
+            attachments: vec![color_view, depth_buffer_view.clone()],
             ..Default::default()
           },
         )
         .unwrap()
       })
       .collect::<Vec<_>>();
-  }
-
-  fn create_command_buffers(
-    device: &Arc<MdrDevice>,
-    pipeline: &Arc<MdrPipeline>,
-    framebuffers: &Vec<Arc<Framebuffer>>,
-    mesh: &MdrMesh,
-  ) -> Vec<Arc<PrimaryAutoCommandBuffer>> {
-    return framebuffers
-      .iter()
-      .map(|framebuffer| {
-        let mut builder = AutoCommandBufferBuilder::primary(
-          device.vk_logical_device.clone(),
-          device.queue_family(),
-          CommandBufferUsage::MultipleSubmit,
-        )
-        .unwrap();
-
-        let clear_color = vec![[0.1, 0.1, 0.1, 1.0].into()];
-        builder
-          .begin_render_pass(framebuffer.clone(), SubpassContents::Inline, clear_color)
-          .unwrap()
-          .bind_pipeline_graphics(pipeline.vk_graphics_pipeline.clone())
-          .bind_vertex_buffers(0, mesh.vertex_buffer.clone())
-          .bind_index_buffer(mesh.index_buffer.clone())
-          .draw_indexed(mesh.index_buffer.len() as u32, 1, 0, 0, 0)
-          .unwrap()
-          .end_render_pass()
-          .unwrap();
-
-        Arc::new(builder.build().unwrap())
-      })
-      .collect();
   }
 }
