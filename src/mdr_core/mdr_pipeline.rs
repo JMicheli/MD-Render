@@ -1,4 +1,3 @@
-use bytemuck::{Pod, Zeroable};
 use std::sync::Arc;
 
 use vulkano::{
@@ -15,25 +14,19 @@ use vulkano::{
 };
 
 use super::mdr_device::MdrDevice;
+use crate::mdr_scene::mdr_mesh::Vertex;
 
 mod vertex_shader {
   vulkano_shaders::shader! {
     ty: "vertex",
-    path: "src/shaders/basic.vert",
+    path: "src/assets/shaders/basic.vert",
   }
 }
 mod fragment_shader {
   vulkano_shaders::shader! {
     ty: "fragment",
-    path: "src/shaders/basic.frag",
+    path: "src/assets/shaders/basic.frag",
   }
-}
-
-#[repr(C)]
-#[derive(Default, Copy, Clone, Zeroable, Pod)]
-pub struct Vertex {
-  pub position: [f32; 2],
-  pub color: [f32; 4],
 }
 
 pub struct MdrPipeline {

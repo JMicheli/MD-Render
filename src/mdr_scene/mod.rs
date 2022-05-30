@@ -1,4 +1,4 @@
-mod mdr_model;
+pub mod mdr_mesh;
 
 pub struct MdrScene {}
 

@@ -4,10 +4,9 @@ use vulkano::device::Device;
 use vulkano::format::Format;
 use vulkano::image::{ImageUsage, SwapchainImage};
 use vulkano::swapchain::{
-  self, AcquireError, SurfaceCapabilities, Swapchain, SwapchainAcquireFuture, SwapchainCreateInfo,
+  self, AcquireError, Swapchain, SwapchainAcquireFuture, SwapchainCreateInfo,
 };
 
-use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
 use super::{mdr_device::MdrDevice, mdr_window::MdrWindow};

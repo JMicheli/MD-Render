@@ -23,10 +23,11 @@ use winit::{
 
 use super::{
   mdr_device::MdrDevice,
-  mdr_pipeline::{MdrPipeline, Vertex},
+  mdr_pipeline::MdrPipeline,
   mdr_swapchain::MdrSwapchain,
   mdr_window::{MdrWindow, MdrWindowOptions},
 };
+use crate::mdr_scene::mdr_mesh::{MdrMesh, Vertex};
 
 pub struct MdrEngine {
   instance: Arc<Instance>,
@@ -38,7 +39,7 @@ pub struct MdrEngine {
   render_pass: Arc<RenderPass>,
   pipeline: Arc<MdrPipeline>,
   viewport: Viewport,
-  vertex_buffer: Arc<CpuAccessibleBuffer<[Vertex]>>,
+  mesh: MdrMesh,
 }
 
 impl MdrEngine {
@@ -79,27 +80,9 @@ impl MdrEngine {
     // Create pipeline
     let pipeline = MdrPipeline::new(&device, &render_pass, &viewport);
 
-    // Generate triangle vertex data
-    vulkano::impl_vertex!(Vertex, position, color);
-    let v1 = Vertex {
-      position: [-0.5, 0.5],
-      color: [1.0, 0.0, 0.0, 1.0],
-    };
-    let v2 = Vertex {
-      position: [0.0, -0.5],
-      color: [0.0, 1.0, 0.0, 1.0],
-    };
-    let v3 = Vertex {
-      position: [0.5, 0.5],
-      color: [0.0, 0.0, 1.0, 1.0],
-    };
-    let vertex_buffer = CpuAccessibleBuffer::from_iter(
-      device.vk_logical_device.clone(),
-      BufferUsage::vertex_buffer(),
-      false,
-      vec![v1, v2, v3].into_iter(),
-    )
-    .unwrap();
+    // Load Suzanne
+    vulkano::impl_vertex!(Vertex, position, normal, color);
+    let mesh = MdrMesh::from_obj(&device, "src/assets/models/suzanne.obj");
 
     Self {
       instance,
@@ -111,19 +94,15 @@ impl MdrEngine {
       render_pass,
       pipeline,
       viewport,
-      vertex_buffer,
+      mesh,
     }
   }
 
   pub fn run(mut self) {
     // Create framebuffers and command buffers
     let mut framebuffers = Self::create_frame_buffers(&self.swapchain, &self.render_pass);
-    let mut command_buffers = Self::create_command_buffers(
-      &self.device,
-      &self.pipeline,
-      &framebuffers,
-      &self.vertex_buffer,
-    );
+    let mut command_buffers =
+      Self::create_command_buffers(&self.device, &self.pipeline, &framebuffers, &self.mesh);
 
     // Loop state variables
     let mut window_was_resized = false;
@@ -177,7 +156,7 @@ impl MdrEngine {
                 &self.device,
                 &self.pipeline,
                 &framebuffers,
-                &self.vertex_buffer,
+                &self.mesh,
               );
             }
           }
@@ -380,7 +359,7 @@ impl MdrEngine {
     device: &Arc<MdrDevice>,
     pipeline: &Arc<MdrPipeline>,
     framebuffers: &Vec<Arc<Framebuffer>>,
-    vertex_buffer: &Arc<CpuAccessibleBuffer<[Vertex]>>,
+    mesh: &MdrMesh,
   ) -> Vec<Arc<PrimaryAutoCommandBuffer>> {
     return framebuffers
       .iter()
@@ -397,8 +376,9 @@ impl MdrEngine {
           .begin_render_pass(framebuffer.clone(), SubpassContents::Inline, clear_color)
           .unwrap()
           .bind_pipeline_graphics(pipeline.vk_graphics_pipeline.clone())
-          .bind_vertex_buffers(0, vertex_buffer.clone())
-          .draw(vertex_buffer.len() as u32, 1, 0, 0)
+          .bind_vertex_buffers(0, mesh.vertex_buffer.clone())
+          .bind_index_buffer(mesh.index_buffer.clone())
+          .draw_indexed(mesh.index_buffer.len() as u32, 1, 0, 0, 0)
           .unwrap()
           .end_render_pass()
           .unwrap();
