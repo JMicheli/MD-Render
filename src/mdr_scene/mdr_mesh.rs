@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
-
 use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer};
 
 use crate::mdr_core::mdr_device::MdrDevice;
@@ -20,7 +19,7 @@ pub struct MdrMesh {
 }
 
 impl MdrMesh {
-  pub fn from_obj(device: &Arc<MdrDevice>, file_path: &str) -> MdrMesh {
+  pub fn from_obj(device: &Arc<MdrDevice>, file_path: &str) -> Arc<MdrMesh> {
     let options = tobj::LoadOptions::default();
     let (models, _) = tobj::load_obj(file_path, &options).expect("Failed to load obj file.");
     // Take only the first model
@@ -63,9 +62,9 @@ impl MdrMesh {
     )
     .unwrap();
     // Create mesh
-    return MdrMesh {
+    return Arc::new(MdrMesh {
       vertex_buffer,
       index_buffer,
-    };
+    });
   }
 }

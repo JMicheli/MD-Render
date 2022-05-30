@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use vulkano::{
-  buffer::{BufferUsage, CpuAccessibleBuffer, TypedBufferAccess},
+  buffer::TypedBufferAccess,
   command_buffer::{
     AutoCommandBufferBuilder, CommandBufferUsage, PrimaryAutoCommandBuffer, SubpassContents,
   },
@@ -39,7 +39,7 @@ pub struct MdrEngine {
   render_pass: Arc<RenderPass>,
   pipeline: Arc<MdrPipeline>,
   viewport: Viewport,
-  mesh: MdrMesh,
+  mesh: Arc<MdrMesh>,
 }
 
 impl MdrEngine {
@@ -371,7 +371,7 @@ impl MdrEngine {
         )
         .unwrap();
 
-        let clear_color = vec![[0.0, 0.0, 0.0, 1.0].into()];
+        let clear_color = vec![[0.1, 0.1, 0.1, 1.0].into()];
         builder
           .begin_render_pass(framebuffer.clone(), SubpassContents::Inline, clear_color)
           .unwrap()
