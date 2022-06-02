@@ -98,8 +98,6 @@ impl MdrEngine {
   pub fn run(mut self) {
     // Create framebuffers and command buffers
     let mut framebuffers = Self::create_frame_buffers(&self.swapchain, &self.render_pass);
-    let mut command_buffers =
-      MdrCommandBuffer::new(&self.device, &self.pipeline, &framebuffers, &self.mesh);
 
     // Loop state variables
     let mut window_was_resized = false;
@@ -130,8 +128,7 @@ impl MdrEngine {
         }
         Event::MainEventsCleared => {
           // Don't render if window is minimized
-          let screen_dimensions = self.window.dimensions();
-          if screen_dimensions.width == 0 && screen_dimensions.height == 0 {
+          if self.window.is_minimized() {
             return;
           }
 
@@ -149,10 +146,14 @@ impl MdrEngine {
               // Set new viewport dimensions, recreate pipeline and command buffers
               self.viewport.dimensions = self.window.dimensions().into();
               self.pipeline = MdrPipeline::new(&self.device, &self.render_pass, &self.viewport);
-              command_buffers =
-                MdrCommandBuffer::new(&self.device, &self.pipeline, &framebuffers, &self.mesh);
             }
           }
+
+          // Upload descriptor sets
+          let aspect_ratio =
+            self.window.dimensions().width as f32 / self.window.dimensions().height as f32;
+          let rotation = 0 as f32;
+          let set = self.pipeline.upload_descriptor_set(aspect_ratio, rotation);
 
           // Drawing
           // First, we acquire the index of the image to draw to
@@ -173,6 +174,10 @@ impl MdrEngine {
           }
 
           // Coreograph interaction with GPU
+          // Create command buffers for submission to the GPU
+          let command_buffers =
+            MdrCommandBuffer::new(&self.device, &self.pipeline, &framebuffers, &self.mesh, set);
+
           // Wait for the acquired image's fence to finish if applicable
           if let Some(image_fence) = &frame_fences[image_index] {
             image_fence.wait(None).unwrap();

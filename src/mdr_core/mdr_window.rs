@@ -51,4 +51,9 @@ impl MdrWindow {
   pub fn dimensions(&self) -> PhysicalSize<u32> {
     return self.surface.window().inner_size();
   }
+
+  pub fn is_minimized(&self) -> bool {
+    let dimensions = self.dimensions();
+    return dimensions.width == 0 && dimensions.height == 0;
+  }
 }
