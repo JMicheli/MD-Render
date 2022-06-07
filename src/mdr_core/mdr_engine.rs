@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use vulkano::{
+  device::Device,
   format::Format,
   image::{view::ImageView, AttachmentImage, ImageAccess},
   instance::{
@@ -24,28 +25,49 @@ use super::{
   mdr_swapchain::MdrSwapchain,
   mdr_window::{MdrWindow, MdrWindowOptions},
 };
-use crate::mdr_scene::mdr_mesh::{MdrMesh, Vertex};
+use crate::mdr_scene::{
+  mdr_mesh::{MdrMesh, Vertex},
+  MdrScene,
+};
+
+pub struct MdrEngineOptions {
+  pub name: String,
+  pub debug: bool,
+}
+
+impl Default for MdrEngineOptions {
+  fn default() -> Self {
+    Self {
+      name: "MD Renderer".to_string(),
+      debug: false,
+    }
+  }
+}
 
 pub struct MdrEngine {
   instance: Arc<Instance>,
   debug_callback: Option<DebugCallback>,
   device: Arc<MdrDevice>,
-  event_loop: EventLoop<()>,
-  window: MdrWindow,
+  window: Arc<MdrWindow>,
   swapchain: MdrSwapchain,
   render_pass: Arc<RenderPass>,
   pipeline: Arc<MdrPipeline>,
   viewport: Viewport,
-  mesh: Arc<MdrMesh>,
+  framebuffers: Vec<Arc<Framebuffer>>,
+
+  // Renderer state
+  should_recreate_swapchain: bool,
+  frame_fences: Vec<Option<Box<dyn GpuFuture>>>,
+  previous_frame_index: usize,
 }
 
 impl MdrEngine {
-  pub fn new(debug_enabled: bool, name: Option<&str>) -> Self {
+  pub fn new(event_loop: &EventLoop<()>, options: MdrEngineOptions) -> Arc<Self> {
     // Create a Vulkan instance with the required extensions.
-    let instance = Self::create_instance(debug_enabled);
+    let instance = Self::create_instance(options.debug);
     // Register debug callback if necessary
     let debug_callback = {
-      if debug_enabled {
+      if options.debug {
         let callback = Self::register_debug_callback(&instance);
         Some(callback)
       } else {
@@ -53,172 +75,152 @@ impl MdrEngine {
       }
     };
 
-    // Begin by creating the event loop
-    let event_loop = EventLoop::new();
-    // Set up window options and create window
-    let window_options = MdrWindowOptions {
-      width: 800,
-      height: 600,
-      title: name.unwrap_or("MD Renderer"),
-      resizable: true,
-    };
-    let window = MdrWindow::new(&instance, &event_loop, &window_options);
+    // Create window
+    let window = MdrWindow::new(
+      &instance,
+      &event_loop,
+      MdrWindowOptions {
+        width: 800,
+        height: 600,
+        title: options.name.as_str(),
+        resizable: true,
+      },
+    );
 
     // Create device
     let device = MdrDevice::new(&instance, &window);
-
     // Create swapchan
     let swapchain = MdrSwapchain::new(&device, &window);
-
     // Create render pass and viewport
     let render_pass = Self::create_render_pass(&device, swapchain.image_format());
     let viewport = window.create_viewport();
-
-    // Create pipeline
+    // Create pipeline and framebuffers
     let pipeline = MdrPipeline::new(&device, &render_pass, &viewport);
+    let framebuffers = Self::create_frame_buffers(&swapchain, &render_pass);
 
-    // Load Suzanne
-    vulkano::impl_vertex!(Vertex, position, normal, color);
-    let mesh = MdrMesh::from_obj(&device, "src/assets/models/suzanne.obj");
+    // Set up frames in flight
+    let frames_in_flight = Self::set_up_frames_in_flight(&swapchain);
 
-    Self {
+    Arc::new(Self {
       instance,
       debug_callback,
       device,
-      event_loop,
       window,
       swapchain,
       render_pass,
       pipeline,
       viewport,
-      mesh,
-    }
+      framebuffers,
+
+      should_recreate_swapchain: false,
+      frame_fences: frames_in_flight,
+      previous_frame_index: 0,
+    })
   }
 
-  pub fn run(mut self) {
-    // Create framebuffers and command buffers
-    let mut framebuffers = Self::create_frame_buffers(&self.swapchain, &self.render_pass);
-
-    // Loop state variables
-    let mut window_was_resized = false;
-    let mut should_recreate_swapchain = false;
-
-    // Frames in flight setup
-    let image_count = self.swapchain.vk_images.len();
-    let mut previous_frame_index = 0;
-    let mut frame_fences: Vec<Option<Arc<FenceSignalFuture<_>>>> = Vec::new();
-    for _ in 0..image_count {
-      frame_fences.push(None);
+  pub fn render(&mut self, scene: Arc<MdrScene>) {
+    // Don't render if window is minimized
+    if self.window.is_minimized() {
+      return;
     }
 
-    self
-      .event_loop
-      .run(move |event, _, control_flow| match event {
-        Event::WindowEvent {
-          event: WindowEvent::CloseRequested,
-          ..
-        } => {
-          *control_flow = ControlFlow::Exit;
-        }
-        Event::WindowEvent {
-          event: WindowEvent::Resized(_),
-          ..
-        } => {
-          window_was_resized = true;
-        }
-        Event::MainEventsCleared => {
-          // Don't render if window is minimized
-          if self.window.is_minimized() {
-            return;
-          }
+    // Resize/swapchain recreation logic
+    if self.window.was_resized || self.should_recreate_swapchain {
+      self.should_recreate_swapchain = false;
 
-          // Resize/swapchain recreation logic
-          if window_was_resized || should_recreate_swapchain {
-            should_recreate_swapchain = false;
+      // Recreate swapchain and framebuffers
+      self.swapchain.recreate();
+      self.framebuffers = Self::create_frame_buffers(&self.swapchain, &self.render_pass);
 
-            // Recreate swapchain and framebuffers
-            self.swapchain.recreate();
-            framebuffers = Self::create_frame_buffers(&self.swapchain, &self.render_pass);
+      if self.window.was_resized {
+        self.window.was_resized = false;
+        // Set new viewport dimensions, recreate pipeline and command buffers
+        self.viewport.dimensions = self.window.dimensions().into();
+        self.pipeline = MdrPipeline::new(&self.device, &self.render_pass, &self.viewport);
+      }
+    }
 
-            if window_was_resized {
-              window_was_resized = false;
+    // Upload descriptor sets
+    let aspect_ratio =
+      self.window.dimensions().width as f32 / self.window.dimensions().height as f32;
+    let rotation: f32 = 0.0;
+    let set = self.pipeline.upload_descriptor_set(aspect_ratio, rotation);
 
-              // Set new viewport dimensions, recreate pipeline and command buffers
-              self.viewport.dimensions = self.window.dimensions().into();
-              self.pipeline = MdrPipeline::new(&self.device, &self.render_pass, &self.viewport);
-            }
-          }
+    // Drawing
+    // First, we acquire the index of the image to draw to
+    let (image_index, is_suboptimal, acquire_future) = match self.swapchain.acquire_next_image() {
+      Ok(r) => r,
+      Err(AcquireError::OutOfDate) => {
+        self.should_recreate_swapchain = true;
+        return;
+      }
+      Err(e) => panic!("Failed to acquire next image: {:?}", e),
+    };
 
-          // Upload descriptor sets
-          let aspect_ratio =
-            self.window.dimensions().width as f32 / self.window.dimensions().height as f32;
-          let rotation = 0 as f32;
-          let set = self.pipeline.upload_descriptor_set(aspect_ratio, rotation);
+    // The swapchain can be suboptimal but not out of date
+    if is_suboptimal {
+      // We'll use it but recreate the swapchain on the next loop
+      self.should_recreate_swapchain = true;
+    }
 
-          // Drawing
-          // First, we acquire the index of the image to draw to
-          let (image_index, is_suboptimal, acquire_future) =
-            match self.swapchain.acquire_next_image() {
-              Ok(r) => r,
-              Err(AcquireError::OutOfDate) => {
-                should_recreate_swapchain = true;
-                return;
-              }
-              Err(e) => panic!("Failed to acquire next image: {:?}", e),
-            };
+    // Coreograph interaction with GPU
+    // Create command buffers for submission to the GPU
+    let command_buffers = MdrCommandBuffer::new(
+      &self.device,
+      &self.pipeline,
+      &self.framebuffers,
+      &scene,
+      set,
+    );
 
-          // The swapchain can be suboptimal but not out of date
-          if is_suboptimal {
-            // We'll use it but recreate the swapchain on the next loop
-            should_recreate_swapchain = true;
-          }
+    // Future stuff
+    if let Some(image_fence) = &mut self.frame_fences[image_index] {
+      image_fence.flush().unwrap();
+      image_fence.cleanup_finished();
+    }
+    // Handle None case for frame_fences
+    match self.frame_fences[self.previous_frame_index] {
+      None => {
+        self.frame_fences[self.previous_frame_index] =
+          Some(sync::now(self.device.vk_logical_device.clone()).boxed());
+      }
+      _ => (),
+    }
 
-          // Coreograph interaction with GPU
-          // Create command buffers for submission to the GPU
-          let command_buffers =
-            MdrCommandBuffer::new(&self.device, &self.pipeline, &framebuffers, &self.mesh, set);
+    // Take previous frame off vector
+    let mut previous_frame_future = self.frame_fences[self.previous_frame_index].take().unwrap();
+    previous_frame_future.cleanup_finished();
 
-          // Wait for the acquired image's fence to finish if applicable
-          if let Some(image_fence) = &frame_fences[image_index] {
-            image_fence.wait(None).unwrap();
-          }
-          //
-          let previous_frame_future = match frame_fences[previous_frame_index].clone() {
-            // If empty, create
-            None => {
-              let mut now = sync::now(self.device.vk_logical_device.clone());
-              now.cleanup_finished();
+    let queue = &self.device.vk_queue;
+    let swapchain = &self.swapchain.vk_swapchain;
+    let future = previous_frame_future
+      .join(acquire_future)
+      .then_execute(queue.clone(), command_buffers.get_primary(image_index))
+      .unwrap()
+      .then_swapchain_present(queue.clone(), swapchain.clone(), image_index)
+      .then_signal_fence_and_flush();
+    // Store fence for later access
+    self.frame_fences[image_index] = match future {
+      Ok(value) => Some(value.boxed()),
+      Err(FlushError::OutOfDate) => {
+        self.should_recreate_swapchain = true;
+        None
+      }
+      Err(e) => {
+        println!("Failed to flush GPU future: {:?}", e);
+        None
+      }
+    };
 
-              now.boxed()
-            }
-            Some(fence) => fence.boxed(),
-          };
-          //
-          let queue = &self.device.vk_queue;
-          let swapchain = &self.swapchain.vk_swapchain;
-          let future = previous_frame_future
-            .join(acquire_future)
-            .then_execute(queue.clone(), command_buffers.get_primary(image_index))
-            .unwrap()
-            .then_swapchain_present(queue.clone(), swapchain.clone(), image_index)
-            .then_signal_fence_and_flush();
-          // Store fence for later access
-          frame_fences[image_index] = match future {
-            Ok(value) => Some(Arc::new(value)),
-            Err(FlushError::OutOfDate) => {
-              should_recreate_swapchain = true;
-              None
-            }
-            Err(e) => {
-              println!("Failed to flush GPU future: {:?}", e);
-              None
-            }
-          };
+    self.previous_frame_index = image_index;
+  }
 
-          previous_frame_index = image_index;
-        }
-        _ => (),
-      })
+  pub fn get_device(&self) -> Arc<MdrDevice> {
+    return self.device.clone();
+  }
+
+  pub fn get_window(&self) -> Arc<MdrWindow> {
+    return self.window.clone();
   }
 
   fn create_instance(debug_enabled: bool) -> Arc<Instance> {
@@ -366,5 +368,16 @@ impl MdrEngine {
         .unwrap()
       })
       .collect::<Vec<_>>();
+  }
+
+  fn set_up_frames_in_flight(swapchain: &MdrSwapchain) -> Vec<Option<Box<dyn GpuFuture>>> {
+    // Frames in flight setup
+    let image_count = swapchain.vk_images.len();
+    let mut frame_fences: Vec<Option<Box<dyn GpuFuture>>> = Vec::new();
+    for _ in 0..image_count {
+      frame_fences.push(None);
+    }
+
+    return frame_fences;
   }
 }

@@ -18,14 +18,15 @@ pub struct MdrWindowOptions<'a> {
 
 pub struct MdrWindow {
   pub surface: Arc<Surface<Window>>,
+  pub was_resized: bool,
 }
 
 impl MdrWindow {
   pub fn new(
     instance: &Arc<Instance>,
     event_loop: &EventLoop<()>,
-    options: &MdrWindowOptions,
-  ) -> Self {
+    options: MdrWindowOptions,
+  ) -> Arc<Self> {
     // Set up event loop and build window
     let surface = WindowBuilder::new()
       .with_title(options.title)
@@ -37,7 +38,10 @@ impl MdrWindow {
       .build_vk_surface(event_loop, instance.clone())
       .unwrap();
 
-    return Self { surface };
+    return Arc::new(Self {
+      surface,
+      was_resized: false,
+    });
   }
 
   pub fn create_viewport(&self) -> Viewport {
@@ -54,6 +58,6 @@ impl MdrWindow {
 
   pub fn is_minimized(&self) -> bool {
     let dimensions = self.dimensions();
-    return dimensions.width == 0 && dimensions.height == 0;
+    return dimensions.width == 0 || dimensions.height == 0;
   }
 }

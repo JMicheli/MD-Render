@@ -5,12 +5,12 @@ use vulkano::{
   command_buffer::{
     AutoCommandBufferBuilder, CommandBufferUsage, PrimaryAutoCommandBuffer, SubpassContents,
   },
-  descriptor_set::{layout::DescriptorSetLayout, PersistentDescriptorSet},
+  descriptor_set::PersistentDescriptorSet,
   pipeline::{Pipeline, PipelineBindPoint},
   render_pass::Framebuffer,
 };
 
-use crate::mdr_scene::mdr_mesh::MdrMesh;
+use crate::mdr_scene::MdrScene;
 
 use super::{mdr_device::MdrDevice, mdr_pipeline::MdrPipeline};
 
@@ -23,7 +23,7 @@ impl MdrCommandBuffer {
     device: &Arc<MdrDevice>,
     pipeline: &Arc<MdrPipeline>,
     framebuffers: &Vec<Arc<Framebuffer>>,
-    mesh: &MdrMesh,
+    scene: &MdrScene,
     set: Arc<PersistentDescriptorSet>,
   ) -> Self {
     // Generate command buffers
@@ -40,6 +40,7 @@ impl MdrCommandBuffer {
         // Clear color used when drawing bacground
         let clear_color = vec![[0.1, 0.1, 0.1, 1.0].into(), 1f32.into()];
 
+        // Initial builder setup
         builder
           .begin_render_pass(framebuffer.clone(), SubpassContents::Inline, clear_color)
           .unwrap()
@@ -49,13 +50,23 @@ impl MdrCommandBuffer {
             pipeline.vk_graphics_pipeline.layout().clone(),
             0,
             set.clone(),
-          )
-          .bind_vertex_buffers(0, mesh.vertex_buffer.clone())
-          .bind_index_buffer(mesh.index_buffer.clone())
-          .draw_indexed(mesh.index_buffer.len() as u32, 1, 0, 0, 0)
-          .unwrap()
-          .end_render_pass()
-          .unwrap();
+          );
+
+        // Loop over scene objects and draw them
+        for render_obj in scene.get_render_objects() {
+          let vertex_buffer = render_obj.get_vertex_buffer();
+          let index_buffer = render_obj.get_vertex_buffer();
+          let index_count = index_buffer.len() as u32;
+
+          builder
+            .bind_vertex_buffers(0, vertex_buffer.clone())
+            .bind_index_buffer(index_buffer.clone())
+            .draw_indexed(index_count, 1, 0, 0, 0)
+            .unwrap();
+        }
+
+        // End render pass
+        builder.end_render_pass().unwrap();
 
         Arc::new(builder.build().unwrap())
       })

@@ -1,17 +1,11 @@
 use std::sync::Arc;
 
-use bytemuck::{Pod, Zeroable};
-use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer};
+use vulkano::{
+  buffer::{BufferUsage, CpuAccessibleBuffer},
+  device::Device,
+};
 
-use crate::mdr_core::mdr_device::MdrDevice;
-
-#[repr(C)]
-#[derive(Default, Copy, Clone, Zeroable, Pod)]
-pub struct Vertex {
-  pub position: [f32; 3],
-  pub normal: [f32; 3],
-  pub color: [f32; 4],
-}
+pub use super::mdr_vertex::Vertex;
 
 pub struct MdrMesh {
   pub vertex_buffer: Arc<CpuAccessibleBuffer<[Vertex]>>,
@@ -19,7 +13,7 @@ pub struct MdrMesh {
 }
 
 impl MdrMesh {
-  pub fn from_obj(device: &Arc<MdrDevice>, file_path: &str) -> Arc<MdrMesh> {
+  pub fn from_obj(device: &Arc<Device>, file_path: &str) -> Arc<MdrMesh> {
     let options = tobj::LoadOptions::default();
     let (models, _) = tobj::load_obj(file_path, &options).expect("Failed to load obj file.");
     // Take only the first model
@@ -48,14 +42,14 @@ impl MdrMesh {
 
     // Create buffers
     let vertex_buffer = CpuAccessibleBuffer::from_iter(
-      device.vk_logical_device.clone(),
+      device.clone(),
       BufferUsage::vertex_buffer(),
       false,
       vertices.iter().cloned(),
     )
     .unwrap();
     let index_buffer = CpuAccessibleBuffer::from_iter(
-      device.vk_logical_device.clone(),
+      device.clone(),
       BufferUsage::index_buffer(),
       false,
       indices.iter().cloned(),
