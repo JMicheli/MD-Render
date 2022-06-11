@@ -223,53 +223,7 @@ impl MdrEngine {
     return self.window.clone();
   }
 
-  fn create_instance(debug_enabled: bool) -> Arc<Instance> {
-    // Get extensions needed to run a window
-    let required_extensions = {
-      let mut extensions = vulkano_win::required_extensions();
-
-      // If debugging is enabled, add the debug utility extension
-      if debug_enabled {
-        let debug_extensions = InstanceExtensions {
-          ext_debug_utils: true,
-          ..InstanceExtensions::none()
-        };
-        extensions = extensions.union(&debug_extensions);
-      }
-
-      extensions
-    };
-
-    // Enable layers
-    let enabled_layers = {
-      let mut output_layers: Vec<String> = vec![];
-
-      // Ignore layers if not in debug mode
-      if debug_enabled {
-        // Print out available layers
-        let mut available_layers = layers_list().unwrap();
-        println!("Available debugging layers:");
-        while let Some(layer) = available_layers.next() {
-          println!("\t{}", layer.name());
-        }
-
-        // Os-specific layers
-        #[cfg(not(target_os = "macos"))]
-        output_layers.push("VK_LAYER_KHRONOS_validation".to_owned());
-        #[cfg(target_os = "macos")]
-        output_layers.push("VK_LAYER_KHRONOS_validation".to_owned());
-      }
-
-      output_layers
-    };
-
-    return Instance::new(InstanceCreateInfo {
-      enabled_extensions: required_extensions,
-      enabled_layers,
-      ..Default::default()
-    })
-    .expect("Failed to create Vulkan instance.");
-  }
+  fn create_instance(debug_enabled: bool) -> Arc<Instance> {}
 
   fn register_debug_callback(instance: &Arc<Instance>) -> DebugCallback {
     let severity = MessageSeverity {

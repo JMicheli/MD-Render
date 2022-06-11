@@ -17,7 +17,7 @@ pub struct MdrWindowOptions<'a> {
 }
 
 pub struct MdrWindow {
-  pub surface: Arc<Surface<Window>>,
+  pub(crate) surface: Arc<Surface<Window>>,
   pub was_resized: bool,
 }
 
@@ -52,10 +52,21 @@ impl MdrWindow {
     };
   }
 
+  /// Returns whether or not the window has been resized, setting the value to
+  /// `false` for subsequent calls.
+  pub fn take_resized(&mut self) -> bool {
+    let previous_value = self.was_resized;
+    self.was_resized = false;
+
+    previous_value
+  }
+
+  /// Returns the dimensions of the window.
   pub fn dimensions(&self) -> PhysicalSize<u32> {
     return self.surface.window().inner_size();
   }
 
+  /// Returns whether or not the window has no visible drawing surface.
   pub fn is_minimized(&self) -> bool {
     let dimensions = self.dimensions();
     return dimensions.width == 0 || dimensions.height == 0;
