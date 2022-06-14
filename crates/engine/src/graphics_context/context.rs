@@ -1,4 +1,4 @@
-use log::{debug, info, warn};
+use log::{debug, info};
 use std::sync::Arc;
 use winit::{event_loop::EventLoop, window::Window};
 
@@ -7,17 +7,37 @@ use vulkano::{
     physical::{PhysicalDevice, PhysicalDeviceType, QueueFamily},
     Device, DeviceCreateInfo, DeviceExtensions, Queue, QueueCreateInfo,
   },
+  format::Format,
+  image::{ImageUsage, SwapchainImage},
   instance::{Instance, InstanceCreateInfo, InstanceExtensions},
-  swapchain::Surface,
+  pipeline::{
+    graphics::{
+      depth_stencil::DepthStencilState,
+      input_assembly::InputAssemblyState,
+      vertex_input::BuffersDefinition,
+      viewport::{Viewport, ViewportState},
+    },
+    GraphicsPipeline,
+  },
+  render_pass::{RenderPass, Subpass},
+  shader::ShaderModule,
+  swapchain::{Surface, Swapchain, SwapchainCreateInfo},
 };
 
 use crate::graphics_context::window::{MdrWindow, MdrWindowOptions};
+use crate::scene::Vertex;
+use crate::shaders::{fragment_shader, vertex_shader};
 
 /// A Vulkan graphics context, contains Vulkano members.
 pub struct MdrGraphicsContext {
   instance: Arc<Instance>,
   window: Arc<MdrWindow>,
   logical_device: Arc<Device>,
+  swapchain: Arc<Swapchain<Window>>,
+  swapchain_images: Vec<Arc<SwapchainImage<Window>>>,
+  render_pass: Arc<RenderPass>,
+  viewport: Viewport,
+  pipeline: Arc<GraphicsPipeline>,
 }
 
 impl MdrGraphicsContext {
@@ -57,10 +77,37 @@ impl MdrGraphicsContext {
       Self::create_logical_device(physical_device, device_extensions, queue_family);
     debug!("Created logical device");
 
+    // Create swapchain
+    let (swapchain, swapchain_images) =
+      Self::create_swapchain(&window, &logical_device, &physical_device);
+    debug!("Created swapchain");
+
+    // Create render pass
+    let render_pass = Self::create_render_pass(&logical_device, swapchain.image_format());
+    debug!("Created render pass");
+
+    // Create viewport
+    let viewport = window.create_viewport();
+    debug!("Created viewport");
+
+    // Load shaders to logical device
+    let (vs, fs) = Self::load_shaders(&logical_device);
+    // Create pipeline
+    let pipeline = Self::create_pipeline(&logical_device, &vs, &fs, &render_pass, &viewport);
+    debug!("Created pipeline");
+
+    // Create framebuffers
+    // let framebuffers = Self::create_framebuffers();
+
     Self {
       instance,
       window,
       logical_device,
+      swapchain,
+      swapchain_images,
+      render_pass,
+      viewport,
+      pipeline,
     }
   }
 
@@ -71,7 +118,7 @@ impl MdrGraphicsContext {
 
       // If debugging is enabled, add the debug utility extension
       if debug_enabled {
-        warn!("Debug enabled");
+        info!("Debug enabled");
         let debug_extensions = InstanceExtensions {
           ext_debug_utils: true,
           ..InstanceExtensions::none()
@@ -89,17 +136,15 @@ impl MdrGraphicsContext {
       // Ignore layers if not in debug mode
       if debug_enabled {
         // Print out available layers
-        let mut available_layers = vulkano::instance::layers_list().unwrap();
         debug!("Available debugging layers:");
+        let mut available_layers = vulkano::instance::layers_list().unwrap();
         while let Some(layer) = available_layers.next() {
           debug!("\t{}", layer.name());
         }
 
-        // Os-specific layers
-        #[cfg(not(target_os = "macos"))]
+        // Push validation layer
         output_layers.push("VK_LAYER_KHRONOS_validation".to_owned());
-        #[cfg(target_os = "macos")]
-        output_layers.push("VK_LAYER_KHRONOS_validation".to_owned());
+        debug!("Enabled layer: VK_LAYER_KHRONOS_validation")
       }
 
       output_layers
@@ -179,11 +224,115 @@ impl MdrGraphicsContext {
     }
   }
 
-  fn create_swapchain() {}
+  fn create_swapchain(
+    window: &MdrWindow,
+    logical_device: &Arc<Device>,
+    physical_device: &PhysicalDevice,
+  ) -> (Arc<Swapchain<Window>>, Vec<Arc<SwapchainImage<Window>>>) {
+    // Retrieve surface capabilities with respect to the physical device
+    let surface = &window.surface;
+    let surface_capabilities = physical_device
+      .surface_capabilities(surface, Default::default())
+      .expect("Failed to retrieve surface capabilities.");
+    // Get other settings
+    let dimensions = window.dimensions();
+    let vk_image_format = Some(
+      physical_device
+        .surface_formats(surface, Default::default())
+        .unwrap()[0]
+        .0,
+    );
 
-  fn create_render_pass() {}
+    let swapchain_result = Swapchain::new(
+      logical_device.clone(),
+      surface.clone(),
+      SwapchainCreateInfo {
+        min_image_count: surface_capabilities.min_image_count + 1,
+        image_format: vk_image_format,
+        image_extent: dimensions.into(),
+        image_usage: ImageUsage::color_attachment(),
+        composite_alpha: surface_capabilities
+          .supported_composite_alpha
+          .iter()
+          .next()
+          .unwrap(),
+        ..Default::default()
+      },
+    );
 
-  fn self_create_fn_2() {}
+    match swapchain_result {
+      Ok(value) => value,
+      Err(e) => {
+        panic!("Failed to generate swapchain: {}", e);
+      }
+    }
+  }
 
-  fn self_create_fn_3() {}
+  fn create_render_pass(logical_device: &Arc<Device>, image_format: Format) -> Arc<RenderPass> {
+    return vulkano::single_pass_renderpass!(
+      logical_device.clone(),
+      attachments: {
+        color: {
+          load: Clear,
+          store: Store,
+          format: image_format,
+          samples: 1,
+        },
+        depth: {
+          load: Clear,
+          store: DontCare,
+          format: Format::D16_UNORM,
+          samples: 1,
+        }
+      },
+      pass: {
+        color: [color],
+        depth_stencil: {depth}
+      }
+    )
+    .unwrap();
+  }
+
+  fn create_pipeline(
+    logical_device: &Arc<Device>,
+    vs: &Arc<ShaderModule>,
+    fs: &Arc<ShaderModule>,
+    render_pass: &Arc<RenderPass>,
+    viewport: &Viewport,
+  ) -> Arc<GraphicsPipeline> {
+    let pipeline = GraphicsPipeline::start()
+      .vertex_input_state(BuffersDefinition::new().vertex::<Vertex>())
+      .vertex_shader(vs.entry_point("main").unwrap(), ())
+      .input_assembly_state(InputAssemblyState::new())
+      .viewport_state(ViewportState::viewport_fixed_scissor_irrelevant([
+        viewport.clone()
+      ]))
+      .fragment_shader(fs.entry_point("main").unwrap(), ())
+      .depth_stencil_state(DepthStencilState::simple_depth_test())
+      .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
+      .build(logical_device.clone())
+      .unwrap();
+
+    pipeline
+  }
+
+  fn load_shaders(logical_device: &Arc<Device>) -> (Arc<ShaderModule>, Arc<ShaderModule>) {
+    // Vertex shader
+    let vs = match vertex_shader::load(logical_device.clone()) {
+      Ok(value) => value,
+      Err(e) => {
+        panic!("Failed to load vertex shader module");
+      }
+    };
+
+    // Fragment shader
+    let fs = match fragment_shader::load(logical_device.clone()) {
+      Ok(value) => value,
+      Err(e) => {
+        panic!("Failed to load fragment shader module");
+      }
+    };
+
+    (vs, fs)
+  }
 }

@@ -18,6 +18,6 @@ impl MdrEngine {
 
     let engine = Self { graphics_context };
 
-    return (engine, event_loop);
+    (engine, event_loop)
   }
 }
