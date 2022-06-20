@@ -10,23 +10,16 @@ use vulkano::{
   format::Format,
   image::{view::ImageView, AttachmentImage, ImageAccess, ImageUsage, SwapchainImage},
   instance::{Instance, InstanceCreateInfo, InstanceExtensions},
-  pipeline::{
-    graphics::{
-      depth_stencil::DepthStencilState,
-      input_assembly::InputAssemblyState,
-      vertex_input::BuffersDefinition,
-      viewport::{Viewport, ViewportState},
-    },
-    GraphicsPipeline,
-  },
-  render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass, Subpass},
+  pipeline::graphics::viewport::Viewport,
+  render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass},
   shader::ShaderModule,
   swapchain::{Surface, Swapchain, SwapchainCreateInfo},
 };
 
-use crate::graphics_context::window::{MdrWindow, MdrWindowOptions};
-use crate::scene::Vertex;
-use crate::shaders::{fragment_shader, vertex_shader};
+use crate::graphics_context::{
+  pipeline::{load_shaders, MdrPipeline},
+  window::{MdrWindow, MdrWindowOptions},
+};
 
 /// A Vulkan graphics context, contains Vulkano members.
 pub struct MdrGraphicsContext {
@@ -37,11 +30,13 @@ pub struct MdrGraphicsContext {
   swapchain_images: Vec<Arc<SwapchainImage<Window>>>,
   render_pass: Arc<RenderPass>,
   viewport: Viewport,
-  pipeline: Arc<GraphicsPipeline>,
+  pipeline: Arc<MdrPipeline>,
   framebuffers: Vec<Arc<Framebuffer>>,
 
   window_was_resized: bool,
   should_recreate_swapchain: bool,
+  vs: Arc<ShaderModule>,
+  fs: Arc<ShaderModule>,
 }
 
 impl MdrGraphicsContext {
@@ -95,9 +90,9 @@ impl MdrGraphicsContext {
     debug!("Created viewport");
 
     // Load shaders to logical device
-    let (vs, fs) = Self::load_shaders(&logical_device);
+    let (vs, fs) = load_shaders(&logical_device);
     // Create pipeline
-    let pipeline = Self::create_pipeline(&logical_device, &vs, &fs, &render_pass, &viewport);
+    let pipeline = MdrPipeline::new(&logical_device, &vs, &fs, &render_pass, &viewport);
     debug!("Created pipeline");
 
     // Create framebuffers
@@ -117,6 +112,8 @@ impl MdrGraphicsContext {
 
       window_was_resized: false,
       should_recreate_swapchain: false,
+      vs,
+      fs,
     }
   }
 
@@ -125,13 +122,36 @@ impl MdrGraphicsContext {
 
     // Skip for minimized windows
     if self.window.is_minimized() {
+      trace!("Window minimized");
       return;
     }
 
     if self.window_was_resized || self.should_recreate_swapchain {
-      self.window_was_resized = false;
+      self.should_recreate_swapchain = false;
 
-      // Recreate swapchain
+      // Recreate swapchain and framebuffers
+      let mut recreate_info = self.swapchain.create_info();
+      recreate_info.image_extent = self.window.dimensions().into();
+      (self.swapchain, self.swapchain_images) = self.swapchain.recreate(recreate_info).unwrap();
+      self.framebuffers = Self::create_framebuffers(
+        &self.logical_device,
+        &self.swapchain_images,
+        &self.render_pass,
+      );
+
+      if self.window_was_resized {
+        self.window_was_resized = false;
+
+        // Recreate viewport and pipeline
+        self.viewport.dimensions = self.window.dimensions().into();
+        self.pipeline = MdrPipeline::new(
+          &self.logical_device,
+          &self.vs,
+          &self.fs,
+          &self.render_pass,
+          &self.viewport,
+        )
+      }
     };
   }
 
@@ -254,7 +274,7 @@ impl MdrGraphicsContext {
   }
 
   fn create_swapchain(
-    window: &MdrWindow,
+    window: &Arc<MdrWindow>,
     logical_device: &Arc<Device>,
     physical_device: &PhysicalDevice,
   ) -> (Arc<Swapchain<Window>>, Vec<Arc<SwapchainImage<Window>>>) {
@@ -320,47 +340,6 @@ impl MdrGraphicsContext {
       }
     )
     .unwrap();
-  }
-
-  fn create_pipeline(
-    logical_device: &Arc<Device>,
-    vs: &Arc<ShaderModule>,
-    fs: &Arc<ShaderModule>,
-    render_pass: &Arc<RenderPass>,
-    viewport: &Viewport,
-  ) -> Arc<GraphicsPipeline> {
-    GraphicsPipeline::start()
-      .vertex_input_state(BuffersDefinition::new().vertex::<Vertex>())
-      .vertex_shader(vs.entry_point("main").unwrap(), ())
-      .input_assembly_state(InputAssemblyState::new())
-      .viewport_state(ViewportState::viewport_fixed_scissor_irrelevant([
-        viewport.clone()
-      ]))
-      .fragment_shader(fs.entry_point("main").unwrap(), ())
-      .depth_stencil_state(DepthStencilState::simple_depth_test())
-      .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
-      .build(logical_device.clone())
-      .unwrap()
-  }
-
-  fn load_shaders(logical_device: &Arc<Device>) -> (Arc<ShaderModule>, Arc<ShaderModule>) {
-    // Vertex shader
-    let vs = match vertex_shader::load(logical_device.clone()) {
-      Ok(value) => value,
-      Err(e) => {
-        panic!("Failed to load vertex shader module: {}", e);
-      }
-    };
-
-    // Fragment shader
-    let fs = match fragment_shader::load(logical_device.clone()) {
-      Ok(value) => value,
-      Err(e) => {
-        panic!("Failed to load fragment shader module: {}", e);
-      }
-    };
-
-    (vs, fs)
   }
 
   fn create_framebuffers(
