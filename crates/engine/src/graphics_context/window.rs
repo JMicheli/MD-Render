@@ -18,7 +18,6 @@ pub struct MdrWindowOptions<'a> {
 
 pub struct MdrWindow {
   pub(crate) surface: Arc<Surface<Window>>,
-  pub was_resized: bool,
 }
 
 impl MdrWindow {
@@ -38,10 +37,7 @@ impl MdrWindow {
       .build_vk_surface(event_loop, instance.clone())
       .unwrap();
 
-    return Arc::new(Self {
-      surface,
-      was_resized: false,
-    });
+    return Arc::new(Self { surface });
   }
 
   pub fn create_viewport(&self) -> Viewport {
@@ -50,15 +46,6 @@ impl MdrWindow {
       dimensions: self.dimensions().into(),
       depth_range: 0.0..1.0,
     };
-  }
-
-  /// Returns whether or not the window has been resized, setting the value to
-  /// `false` for subsequent calls.
-  pub fn take_resized(&mut self) -> bool {
-    let previous_value = self.was_resized;
-    self.was_resized = false;
-
-    previous_value
   }
 
   /// Returns the dimensions of the window.

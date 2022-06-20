@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log::{debug, info, trace};
 use std::sync::Arc;
 use winit::{event_loop::EventLoop, window::Window};
 
@@ -8,7 +8,7 @@ use vulkano::{
     Device, DeviceCreateInfo, DeviceExtensions, Queue, QueueCreateInfo,
   },
   format::Format,
-  image::{ImageUsage, SwapchainImage},
+  image::{view::ImageView, AttachmentImage, ImageAccess, ImageUsage, SwapchainImage},
   instance::{Instance, InstanceCreateInfo, InstanceExtensions},
   pipeline::{
     graphics::{
@@ -19,7 +19,7 @@ use vulkano::{
     },
     GraphicsPipeline,
   },
-  render_pass::{RenderPass, Subpass},
+  render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass, Subpass},
   shader::ShaderModule,
   swapchain::{Surface, Swapchain, SwapchainCreateInfo},
 };
@@ -38,6 +38,10 @@ pub struct MdrGraphicsContext {
   render_pass: Arc<RenderPass>,
   viewport: Viewport,
   pipeline: Arc<GraphicsPipeline>,
+  framebuffers: Vec<Arc<Framebuffer>>,
+
+  window_was_resized: bool,
+  should_recreate_swapchain: bool,
 }
 
 impl MdrGraphicsContext {
@@ -97,7 +101,8 @@ impl MdrGraphicsContext {
     debug!("Created pipeline");
 
     // Create framebuffers
-    // let framebuffers = Self::create_framebuffers();
+    let framebuffers = Self::create_framebuffers(&logical_device, &swapchain_images, &render_pass);
+    debug!("Created framebuffers");
 
     Self {
       instance,
@@ -108,7 +113,31 @@ impl MdrGraphicsContext {
       render_pass,
       viewport,
       pipeline,
+      framebuffers,
+
+      window_was_resized: false,
+      should_recreate_swapchain: false,
     }
+  }
+
+  pub fn draw(&mut self) {
+    trace!("Starting draw");
+
+    // Skip for minimized windows
+    if self.window.is_minimized() {
+      return;
+    }
+
+    if self.window_was_resized || self.should_recreate_swapchain {
+      self.window_was_resized = false;
+
+      // Recreate swapchain
+    };
+  }
+
+  /// Set context to trigger size-dependent reinitialization
+  pub fn notify_resized(&mut self) {
+    self.window_was_resized = true;
   }
 
   /// Create a Vulkan instance with optional debug extensions.
@@ -300,7 +329,7 @@ impl MdrGraphicsContext {
     render_pass: &Arc<RenderPass>,
     viewport: &Viewport,
   ) -> Arc<GraphicsPipeline> {
-    let pipeline = GraphicsPipeline::start()
+    GraphicsPipeline::start()
       .vertex_input_state(BuffersDefinition::new().vertex::<Vertex>())
       .vertex_shader(vs.entry_point("main").unwrap(), ())
       .input_assembly_state(InputAssemblyState::new())
@@ -311,9 +340,7 @@ impl MdrGraphicsContext {
       .depth_stencil_state(DepthStencilState::simple_depth_test())
       .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
       .build(logical_device.clone())
-      .unwrap();
-
-    pipeline
+      .unwrap()
   }
 
   fn load_shaders(logical_device: &Arc<Device>) -> (Arc<ShaderModule>, Arc<ShaderModule>) {
@@ -321,7 +348,7 @@ impl MdrGraphicsContext {
     let vs = match vertex_shader::load(logical_device.clone()) {
       Ok(value) => value,
       Err(e) => {
-        panic!("Failed to load vertex shader module");
+        panic!("Failed to load vertex shader module: {}", e);
       }
     };
 
@@ -329,10 +356,39 @@ impl MdrGraphicsContext {
     let fs = match fragment_shader::load(logical_device.clone()) {
       Ok(value) => value,
       Err(e) => {
-        panic!("Failed to load fragment shader module");
+        panic!("Failed to load fragment shader module: {}", e);
       }
     };
 
     (vs, fs)
+  }
+
+  fn create_framebuffers(
+    logical_device: &Arc<Device>,
+    swapchain_images: &Vec<Arc<SwapchainImage<Window>>>,
+    render_pass: &Arc<RenderPass>,
+  ) -> Vec<Arc<Framebuffer>> {
+    let dimensions = swapchain_images[0].dimensions().width_height();
+    // Create depth buffer
+    let depth_buffer_image =
+      AttachmentImage::transient(logical_device.clone(), dimensions, Format::D16_UNORM).unwrap();
+    let depth_buffer_view = ImageView::new_default(depth_buffer_image).unwrap();
+
+    // Create and return framebuffers
+    return swapchain_images
+      .iter()
+      .map(|image| {
+        let color_view = ImageView::new_default(image.clone()).unwrap();
+        Framebuffer::new(
+          render_pass.clone(),
+          FramebufferCreateInfo {
+            // Attach color and depth view
+            attachments: vec![color_view, depth_buffer_view.clone()],
+            ..Default::default()
+          },
+        )
+        .unwrap()
+      })
+      .collect::<Vec<_>>();
   }
 }
