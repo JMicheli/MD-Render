@@ -16,10 +16,9 @@ use vulkano::{
 };
 
 use crate::scene::Vertex;
-use crate::shaders::{fragment_shader, vertex_shader};
 
 pub struct MdrPipeline {
-  graphics_pipeline: Arc<GraphicsPipeline>,
+  pub graphics_pipeline: Arc<GraphicsPipeline>,
 }
 
 impl MdrPipeline {
@@ -45,24 +44,4 @@ impl MdrPipeline {
 
     Arc::new(Self { graphics_pipeline })
   }
-}
-
-pub fn load_shaders(logical_device: &Arc<Device>) -> (Arc<ShaderModule>, Arc<ShaderModule>) {
-  // Vertex shader
-  let vs = match vertex_shader::load(logical_device.clone()) {
-    Ok(value) => value,
-    Err(e) => {
-      panic!("Failed to load vertex shader module: {}", e);
-    }
-  };
-
-  // Fragment shader
-  let fs = match fragment_shader::load(logical_device.clone()) {
-    Ok(value) => value,
-    Err(e) => {
-      panic!("Failed to load fragment shader module: {}", e);
-    }
-  };
-
-  (vs, fs)
 }

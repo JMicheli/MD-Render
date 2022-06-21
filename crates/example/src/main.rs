@@ -1,10 +1,6 @@
 mod logger;
 
 use log::info;
-use winit::{
-  event::{Event, WindowEvent},
-  event_loop::ControlFlow,
-};
 
 use mdr_engine::{MdrEngine, MdrEngineOptions};
 
