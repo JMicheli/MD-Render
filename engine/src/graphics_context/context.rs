@@ -5,13 +5,14 @@ use winit::{event_loop::EventLoop, window::Window};
 use vulkano::{
   buffer::{BufferUsage, CpuAccessibleBuffer, TypedBufferAccess},
   command_buffer::{
-    AutoCommandBufferBuilder, CommandBufferUsage, PrimaryAutoCommandBuffer, SubpassContents,
+    AutoCommandBufferBuilder, CommandBufferUsage, PrimaryAutoCommandBuffer, RenderPassBeginInfo,
+    SubpassContents,
   },
   device::{
     physical::{PhysicalDevice, PhysicalDeviceType, QueueFamily},
     Device, DeviceCreateInfo, DeviceExtensions, Queue, QueueCreateInfo,
   },
-  format::Format,
+  format::{ClearColorValue, ClearValue, Format},
   image::{view::ImageView, AttachmentImage, ImageAccess, ImageUsage, SwapchainImage},
   instance::{Instance, InstanceCreateInfo, InstanceExtensions},
   pipeline::graphics::viewport::Viewport,
@@ -301,12 +302,16 @@ impl MdrGraphicsContext {
         .unwrap();
 
         // Clear color used when drawing bacground
-        let clear_color = vec![[0.1, 0.1, 0.1, 1.0].into(), 1f32.into()];
+        let clear_color_value = ClearValue::Float([0.1, 0.1, 0.1, 1.0]);
+        let clear_depth_value = ClearValue::Depth(1.0);
 
         // Build command buffer
+        let mut begin_render_pass_info = RenderPassBeginInfo::framebuffer(framebuffer.clone());
+        begin_render_pass_info.clear_values =
+          vec![Some(clear_color_value), Some(clear_depth_value)];
         // Begin render pass
         builder
-          .begin_render_pass(framebuffer.clone(), SubpassContents::Inline, clear_color)
+          .begin_render_pass(begin_render_pass_info, SubpassContents::Inline)
           .unwrap()
           // Draw
           .bind_pipeline_graphics(pipeline.graphics_pipeline.clone())
