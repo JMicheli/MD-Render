@@ -9,3 +9,19 @@ pub struct Vertex {
 }
 
 vulkano::impl_vertex!(Vertex, position, normal, color);
+
+pub type MdrMeshId = u32;
+
+pub struct MdrMesh {
+  vertices: Vec<Vertex>,
+  indices: Vec<u32>,
+}
+
+impl MdrMesh {
+  pub fn new() -> Self {
+    Self {
+      vertices: Vec::new(),
+      indices: Vec::new(),
+    }
+  }
+}

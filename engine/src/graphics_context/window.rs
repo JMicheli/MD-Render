@@ -48,6 +48,10 @@ impl MdrWindow {
     };
   }
 
+  pub fn set_title(&self, title: &str) {
+    self.surface.window().set_title(title);
+  }
+
   /// Returns the dimensions of the window.
   pub fn dimensions(&self) -> PhysicalSize<u32> {
     return self.surface.window().inner_size();

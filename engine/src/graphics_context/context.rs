@@ -33,7 +33,8 @@ use crate::{
 
 /// A Vulkan graphics context, contains Vulkano members.
 pub struct MdrGraphicsContext {
-  window: Arc<MdrWindow>,
+  pub(crate) window: Arc<MdrWindow>,
+
   logical_device: Arc<Device>,
   queue: Arc<Queue>,
   swapchain: Arc<Swapchain<Window>>,
@@ -115,23 +116,6 @@ impl MdrGraphicsContext {
 
     // Vertex buffers for testing
     // TODO remove
-    let vertices = [
-      Vertex {
-        position: [-0.5, 0.5, 0.0],
-        normal: [0.0, 0.0, 0.0],
-        color: [0.0, 0.0, 1.0, 1.0],
-      },
-      Vertex {
-        position: [0.5, 0.5, 0.0],
-        normal: [0.0, 0.0, 0.0],
-        color: [0.0, 1.0, 0.0, 1.0],
-      },
-      Vertex {
-        position: [0.0, -0.5, 0.0],
-        normal: [0.0, 0.0, 0.0],
-        color: [1.0, 0.0, 0.0, 1.0],
-      },
-    ];
     let vertex_buffer = CpuAccessibleBuffer::from_iter(
       logical_device.clone(),
       BufferUsage::vertex_buffer(),
@@ -155,6 +139,7 @@ impl MdrGraphicsContext {
 
     Self {
       window,
+
       logical_device,
       queue,
       swapchain,

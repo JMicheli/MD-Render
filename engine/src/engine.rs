@@ -4,7 +4,7 @@ use winit::{
   event_loop::{ControlFlow, EventLoop},
 };
 
-use crate::graphics_context::MdrGraphicsContext;
+use crate::{graphics_context::MdrGraphicsContext, scene::MdrScene};
 
 pub struct MdrEngineOptions {
   pub debug: bool,
@@ -12,15 +12,17 @@ pub struct MdrEngineOptions {
 
 pub struct MdrEngine {
   graphics_context: MdrGraphicsContext,
+  scene: MdrScene,
 }
 
 impl MdrEngine {
   pub fn new(options: MdrEngineOptions) -> (Self, EventLoop<()>) {
-    // Create event loop
     let event_loop = EventLoop::new();
-    let graphics_context = MdrGraphicsContext::new(&event_loop, options.debug);
 
-    let engine = Self { graphics_context };
+    let engine = Self {
+      graphics_context: MdrGraphicsContext::new(&event_loop, options.debug),
+      scene: MdrScene::new(),
+    };
 
     (engine, event_loop)
   }
