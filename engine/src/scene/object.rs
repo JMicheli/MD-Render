@@ -20,7 +20,7 @@ impl MdrTransform {
 
 pub struct MdrSceneObject {
   pub mesh: MdrMesh,
-  transform: MdrTransform,
+  pub transform: MdrTransform,
 }
 
 impl MdrSceneObject {

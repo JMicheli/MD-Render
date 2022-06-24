@@ -3,7 +3,7 @@ use std::sync::Arc;
 use winit::{event_loop::EventLoop, window::Window};
 
 use vulkano::{
-  buffer::{BufferUsage, CpuAccessibleBuffer, TypedBufferAccess},
+  buffer::{BufferUsage, CpuAccessibleBuffer},
   command_buffer::{
     AutoCommandBufferBuilder, CommandBufferUsage, PrimaryAutoCommandBuffer, RenderPassBeginInfo,
     SubpassContents,
@@ -12,7 +12,7 @@ use vulkano::{
     physical::{PhysicalDevice, PhysicalDeviceType, QueueFamily},
     Device, DeviceCreateInfo, DeviceExtensions, Queue, QueueCreateInfo,
   },
-  format::{ClearColorValue, ClearValue, Format},
+  format::{ClearValue, Format},
   image::{view::ImageView, AttachmentImage, ImageAccess, ImageUsage, SwapchainImage},
   instance::{Instance, InstanceCreateInfo, InstanceExtensions},
   pipeline::graphics::viewport::Viewport,
@@ -43,8 +43,7 @@ pub struct MdrGraphicsContext {
   viewport: Viewport,
   pipeline: Arc<MdrPipeline>,
   framebuffers: Vec<Arc<Framebuffer>>,
-  command_buffers: Vec<Arc<PrimaryAutoCommandBuffer>>,
-  scene: MdrScene,
+  command_buffers: Option<Vec<Arc<PrimaryAutoCommandBuffer>>>,
 
   window_was_resized: bool,
   should_recreate_swapchain: bool,
@@ -114,19 +113,8 @@ impl MdrGraphicsContext {
     let framebuffers = Self::create_framebuffers(&logical_device, &swapchain_images, &render_pass);
     debug!("Created framebuffers");
 
-    // Create scene with test triangle
-    // TODO Externalize this
-    let triangle = MdrSceneObject::test_triangle();
-    let mut scene = MdrScene::new();
-    scene.add_object(triangle);
-
     // Create vector of futures corresponding to each swapchain image
     let frame_futures = Self::set_up_frame_futures(swapchain_images.len());
-
-    // Create command buffers
-    let command_buffers =
-      Self::create_command_buffers(&logical_device, &queue, &pipeline, &framebuffers, &scene);
-    debug!("Created command buffers");
 
     Self {
       window,
@@ -139,8 +127,7 @@ impl MdrGraphicsContext {
       viewport,
       pipeline,
       framebuffers,
-      command_buffers,
-      scene,
+      command_buffers: None,
 
       window_was_resized: false,
       should_recreate_swapchain: false,
@@ -151,7 +138,7 @@ impl MdrGraphicsContext {
     }
   }
 
-  pub fn draw(&mut self) {
+  pub fn draw(&mut self, scene: &MdrScene) {
     trace!("Starting draw");
 
     // Skip draw for minimized windows
@@ -161,6 +148,18 @@ impl MdrGraphicsContext {
     }
 
     self.size_dependent_recreations();
+    // Recreate command buffers if necessary
+    if self.command_buffers.is_none() {
+      let new_command_buffers = Self::create_command_buffers(
+        &self.logical_device,
+        &self.queue,
+        &self.pipeline,
+        &self.framebuffers,
+        scene,
+      );
+
+      self.command_buffers = Some(new_command_buffers);
+    }
 
     // First, we acquire the index of the image to draw to
     let (image_index, is_suboptimal, acquire_future) =
@@ -176,7 +175,7 @@ impl MdrGraphicsContext {
 
     // The swapchain can be suboptimal but not out of date
     if is_suboptimal {
-      debug!("Swapchain suboptimal, flagging for recreation");
+      trace!("Swapchain suboptimal, flagging for recreation");
       // We'll use it but recreate the swapchain on the next loop
       self.should_recreate_swapchain = true;
     }
@@ -188,7 +187,7 @@ impl MdrGraphicsContext {
     };
     previous_frame_end.cleanup_finished();
 
-    let cmd_buffer = self.command_buffers[image_index].clone();
+    let cmd_buffer = self.command_buffers.as_ref().unwrap()[image_index].clone();
     let future = previous_frame_end
       .join(acquire_future)
       .then_execute(self.queue.clone(), cmd_buffer)
@@ -211,6 +210,7 @@ impl MdrGraphicsContext {
     // Store as previous frame
     self.frame_futures[image_index] = Some(end_of_frame_future);
     self.previous_frame_index = image_index;
+    trace!("Completed draw")
   }
 
   fn size_dependent_recreations(&mut self) {
@@ -243,20 +243,17 @@ impl MdrGraphicsContext {
         );
       }
 
-      // Recreate command buffers
-      self.command_buffers = Self::create_command_buffers(
-        &self.logical_device,
-        &self.queue,
-        &self.pipeline,
-        &self.framebuffers,
-        &self.scene,
-      );
+      self.invalidate_command_buffers();
     }
   }
 
   /// Set context to trigger size-dependent reinitialization
   pub fn notify_resized(&mut self) {
     self.window_was_resized = true;
+  }
+
+  fn invalidate_command_buffers(&mut self) {
+    self.command_buffers = None;
   }
 
   pub fn create_command_buffers(
@@ -266,7 +263,7 @@ impl MdrGraphicsContext {
     framebuffers: &Vec<Arc<Framebuffer>>,
     scene: &MdrScene,
   ) -> Vec<Arc<PrimaryAutoCommandBuffer>> {
-    framebuffers
+    let command_buffers = framebuffers
       .iter()
       .map(|framebuffer| {
         // Create command buffer builder
@@ -309,7 +306,10 @@ impl MdrGraphicsContext {
         // Build
         Arc::new(builder.build().unwrap())
       })
-      .collect()
+      .collect();
+
+    trace!("Created command buffers");
+    command_buffers
   }
 
   fn upload_scene_object(

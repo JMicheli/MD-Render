@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use super::{camera::MdrCamera, object::MdrSceneObject};
 
 pub struct MdrScene {

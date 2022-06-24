@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use log::{info, trace};
 use winit::{
   event::{Event, WindowEvent},
@@ -11,8 +13,9 @@ pub struct MdrEngineOptions {
 }
 
 pub struct MdrEngine {
+  pub scene: MdrScene,
+
   graphics_context: MdrGraphicsContext,
-  scene: MdrScene,
 }
 
 impl MdrEngine {
@@ -45,7 +48,7 @@ impl MdrEngine {
         None
       }
       Event::MainEventsCleared => {
-        self.graphics_context.draw();
+        self.graphics_context.draw(&self.scene);
         None
       }
       _ => None,
