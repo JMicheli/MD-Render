@@ -1,13 +1,15 @@
+use cgmath::Matrix4;
 use log::{debug, error, info, trace};
 use std::sync::Arc;
 use winit::{event_loop::EventLoop, window::Window};
 
 use vulkano::{
-  buffer::{BufferUsage, CpuAccessibleBuffer},
+  buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
   command_buffer::{
     AutoCommandBufferBuilder, CommandBufferUsage, PrimaryAutoCommandBuffer, RenderPassBeginInfo,
     SubpassContents,
   },
+  descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet},
   device::{
     physical::{PhysicalDevice, PhysicalDeviceType, QueueFamily},
     Device, DeviceCreateInfo, DeviceExtensions, Queue, QueueCreateInfo,
@@ -15,7 +17,7 @@ use vulkano::{
   format::{ClearValue, Format},
   image::{view::ImageView, AttachmentImage, ImageAccess, ImageUsage, SwapchainImage},
   instance::{Instance, InstanceCreateInfo, InstanceExtensions},
-  pipeline::graphics::viewport::Viewport,
+  pipeline::{graphics::viewport::Viewport, Pipeline, PipelineBindPoint},
   render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass},
   shader::ShaderModule,
   swapchain::{self, AcquireError, Surface, Swapchain, SwapchainCreateInfo},
@@ -27,8 +29,8 @@ use crate::{
     pipeline::MdrPipeline,
     window::{MdrWindow, MdrWindowOptions},
   },
-  scene::{MdrScene, MdrSceneObject, Vertex},
-  shaders,
+  scene::{MdrCamera, MdrScene, MdrSceneObject, Vertex},
+  shaders::{self, basic_vertex_shader::ty::BasicUniformData},
 };
 
 /// A Vulkan graphics context, contains Vulkano members.
@@ -43,6 +45,7 @@ pub struct MdrGraphicsContext {
   viewport: Viewport,
   pipeline: Arc<MdrPipeline>,
   framebuffers: Vec<Arc<Framebuffer>>,
+
   command_buffers: Option<Vec<Arc<PrimaryAutoCommandBuffer>>>,
 
   window_was_resized: bool,
@@ -104,7 +107,7 @@ impl MdrGraphicsContext {
     debug!("Created viewport");
 
     // Load shaders to logical device
-    let (vs, fs) = shaders::load_triangle_shaders(&logical_device);
+    let (vs, fs) = shaders::load_basic_shaders(&logical_device);
     // Create pipeline
     let pipeline = MdrPipeline::new(&logical_device, &vs, &fs, &render_pass, &viewport);
     debug!("Created pipeline");
@@ -127,6 +130,7 @@ impl MdrGraphicsContext {
       viewport,
       pipeline,
       framebuffers,
+
       command_buffers: None,
 
       window_was_resized: false,
@@ -147,19 +151,15 @@ impl MdrGraphicsContext {
       return;
     }
 
-    self.size_dependent_recreations();
-    // Recreate command buffers if necessary
-    if self.command_buffers.is_none() {
-      let new_command_buffers = Self::create_command_buffers(
-        &self.logical_device,
-        &self.queue,
-        &self.pipeline,
-        &self.framebuffers,
-        scene,
-      );
-
-      self.command_buffers = Some(new_command_buffers);
-    }
+    self.size_dependent_updates();
+    // Recreate command buffers
+    self.command_buffers = Some(Self::create_command_buffers(
+      &self.logical_device,
+      &self.queue,
+      &self.pipeline,
+      &self.framebuffers,
+      scene,
+    ));
 
     // First, we acquire the index of the image to draw to
     let (image_index, is_suboptimal, acquire_future) =
@@ -213,7 +213,7 @@ impl MdrGraphicsContext {
     trace!("Completed draw")
   }
 
-  fn size_dependent_recreations(&mut self) {
+  fn size_dependent_updates(&mut self) {
     if self.window_was_resized || self.should_recreate_swapchain {
       self.should_recreate_swapchain = false;
 
@@ -242,18 +242,12 @@ impl MdrGraphicsContext {
           &self.viewport,
         );
       }
-
-      self.invalidate_command_buffers();
     }
   }
 
   /// Set context to trigger size-dependent reinitialization
   pub fn notify_resized(&mut self) {
     self.window_was_resized = true;
-  }
-
-  fn invalidate_command_buffers(&mut self) {
-    self.command_buffers = None;
   }
 
   pub fn create_command_buffers(
@@ -289,6 +283,28 @@ impl MdrGraphicsContext {
 
         // Draw
         builder.bind_pipeline_graphics(pipeline.graphics_pipeline.clone());
+        // Upload camera transforms
+        let aspect_ratio = framebuffer.extent()[0] as f32 / framebuffer.extent()[1] as f32;
+        let camera_buffer =
+          Self::upload_camera_buffer(&logical_device, &scene.camera, aspect_ratio);
+        let camera_descriptor_set = PersistentDescriptorSet::new(
+          pipeline
+            .graphics_pipeline
+            .layout()
+            .set_layouts()
+            .get(0)
+            .unwrap()
+            .clone(),
+          [WriteDescriptorSet::buffer(0, camera_buffer)],
+        )
+        .unwrap();
+        builder.bind_descriptor_sets(
+          PipelineBindPoint::Graphics,
+          pipeline.graphics_pipeline.layout().clone(),
+          0,
+          camera_descriptor_set.clone(),
+        );
+        // Render objects
         for object in scene.scene_objects.iter() {
           let (vertex_buffer, index_buffer, index_count) =
             Self::upload_scene_object(&logical_device, object);
@@ -341,6 +357,26 @@ impl MdrGraphicsContext {
       index_buffer,
       object.mesh.indices.len() as u32,
     )
+  }
+
+  fn upload_camera_buffer(
+    logical_device: &Arc<Device>,
+    camera: &MdrCamera,
+    aspect_ratio: f32,
+  ) -> Arc<CpuAccessibleBuffer<BasicUniformData>> {
+    let (world, view, proj) = camera.as_wvp(aspect_ratio);
+
+    CpuAccessibleBuffer::from_data(
+      logical_device.clone(),
+      BufferUsage::uniform_buffer(),
+      false,
+      BasicUniformData {
+        world: world.into(),
+        view: view.into(),
+        proj: proj.into(),
+      },
+    )
+    .unwrap()
   }
 
   /// Create a Vulkan instance with optional debug extensions.

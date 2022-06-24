@@ -41,7 +41,7 @@ impl MdrEngine {
         Some(ControlFlow::Exit)
       }
       Event::WindowEvent {
-        event: WindowEvent::Resized(_),
+        event: WindowEvent::Resized(size),
         ..
       } => {
         trace!("Resized");
