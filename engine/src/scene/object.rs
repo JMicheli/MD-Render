@@ -19,12 +19,19 @@ impl MdrTransform {
 }
 
 pub struct MdrSceneObject {
-  mesh: MdrMesh,
+  pub mesh: MdrMesh,
   transform: MdrTransform,
 }
 
 impl MdrSceneObject {
-  pub fn new() -> Self {
+  pub fn new(mesh: MdrMesh) -> Self {
+    Self {
+      mesh,
+      transform: MdrTransform::new(),
+    }
+  }
+
+  pub fn empty() -> Self {
     Self {
       mesh: MdrMesh::new(),
       transform: MdrTransform::new(),

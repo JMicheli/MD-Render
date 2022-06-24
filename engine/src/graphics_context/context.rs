@@ -27,7 +27,7 @@ use crate::{
     pipeline::MdrPipeline,
     window::{MdrWindow, MdrWindowOptions},
   },
-  scene::Vertex,
+  scene::{MdrScene, MdrSceneObject, Vertex},
   shaders,
 };
 
@@ -44,7 +44,7 @@ pub struct MdrGraphicsContext {
   pipeline: Arc<MdrPipeline>,
   framebuffers: Vec<Arc<Framebuffer>>,
   command_buffers: Vec<Arc<PrimaryAutoCommandBuffer>>,
-  vertex_buffer: Arc<CpuAccessibleBuffer<[Vertex]>>,
+  scene: MdrScene,
 
   window_was_resized: bool,
   should_recreate_swapchain: bool,
@@ -114,27 +114,18 @@ impl MdrGraphicsContext {
     let framebuffers = Self::create_framebuffers(&logical_device, &swapchain_images, &render_pass);
     debug!("Created framebuffers");
 
-    // Vertex buffers for testing
-    // TODO remove
-    let vertex_buffer = CpuAccessibleBuffer::from_iter(
-      logical_device.clone(),
-      BufferUsage::vertex_buffer(),
-      false,
-      vertices,
-    )
-    .unwrap();
+    // Create scene with test triangle
+    // TODO Externalize this
+    let triangle = MdrSceneObject::test_triangle();
+    let mut scene = MdrScene::new();
+    scene.add_object(triangle);
 
     // Create vector of futures corresponding to each swapchain image
     let frame_futures = Self::set_up_frame_futures(swapchain_images.len());
 
     // Create command buffers
-    let command_buffers = Self::create_command_buffers(
-      &logical_device,
-      &queue,
-      &pipeline,
-      &framebuffers,
-      &vertex_buffer,
-    );
+    let command_buffers =
+      Self::create_command_buffers(&logical_device, &queue, &pipeline, &framebuffers, &scene);
     debug!("Created command buffers");
 
     Self {
@@ -149,7 +140,7 @@ impl MdrGraphicsContext {
       pipeline,
       framebuffers,
       command_buffers,
-      vertex_buffer,
+      scene,
 
       window_was_resized: false,
       should_recreate_swapchain: false,
@@ -258,7 +249,7 @@ impl MdrGraphicsContext {
         &self.queue,
         &self.pipeline,
         &self.framebuffers,
-        &self.vertex_buffer,
+        &self.scene,
       );
     }
   }
@@ -273,7 +264,7 @@ impl MdrGraphicsContext {
     queue: &Arc<Queue>,
     pipeline: &Arc<MdrPipeline>,
     framebuffers: &Vec<Arc<Framebuffer>>,
-    vertex_buffer: &Arc<CpuAccessibleBuffer<[Vertex]>>,
+    scene: &MdrScene,
   ) -> Vec<Arc<PrimaryAutoCommandBuffer>> {
     framebuffers
       .iter()
@@ -297,20 +288,59 @@ impl MdrGraphicsContext {
         // Begin render pass
         builder
           .begin_render_pass(begin_render_pass_info, SubpassContents::Inline)
-          .unwrap()
-          // Draw
-          .bind_pipeline_graphics(pipeline.graphics_pipeline.clone())
-          .bind_vertex_buffers(0, vertex_buffer.clone())
-          .draw(vertex_buffer.len() as u32, 1, 0, 0)
-          .unwrap()
-          // End render pass
-          .end_render_pass()
           .unwrap();
+
+        // Draw
+        builder.bind_pipeline_graphics(pipeline.graphics_pipeline.clone());
+        for object in scene.scene_objects.iter() {
+          let (vertex_buffer, index_buffer, index_count) =
+            Self::upload_scene_object(&logical_device, object);
+
+          builder
+            .bind_vertex_buffers(0, vertex_buffer.clone())
+            .bind_index_buffer(index_buffer)
+            .draw_indexed(index_count, 1, 0, 0, 0)
+            .unwrap();
+        }
+
+        // End render pass
+        builder.end_render_pass().unwrap();
 
         // Build
         Arc::new(builder.build().unwrap())
       })
       .collect()
+  }
+
+  fn upload_scene_object(
+    logical_device: &Arc<Device>,
+    object: &MdrSceneObject,
+  ) -> (
+    Arc<CpuAccessibleBuffer<[Vertex]>>,
+    Arc<CpuAccessibleBuffer<[u32]>>,
+    u32,
+  ) {
+    let vertex_buffer = CpuAccessibleBuffer::from_iter(
+      logical_device.clone(),
+      BufferUsage::vertex_buffer(),
+      false,
+      object.mesh.vertices.clone(),
+    )
+    .unwrap();
+
+    let index_buffer = CpuAccessibleBuffer::from_iter(
+      logical_device.clone(),
+      BufferUsage::index_buffer(),
+      false,
+      object.mesh.indices.clone(),
+    )
+    .unwrap();
+
+    (
+      vertex_buffer,
+      index_buffer,
+      object.mesh.indices.len() as u32,
+    )
   }
 
   /// Create a Vulkan instance with optional debug extensions.

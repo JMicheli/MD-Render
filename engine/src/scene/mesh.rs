@@ -10,11 +10,9 @@ pub struct Vertex {
 
 vulkano::impl_vertex!(Vertex, position, normal, color);
 
-pub type MdrMeshId = u32;
-
 pub struct MdrMesh {
-  vertices: Vec<Vertex>,
-  indices: Vec<u32>,
+  pub vertices: Vec<Vertex>,
+  pub indices: Vec<u32>,
 }
 
 impl MdrMesh {

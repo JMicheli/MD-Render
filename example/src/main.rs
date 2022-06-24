@@ -7,7 +7,7 @@ use mdr_engine::{MdrEngine, MdrEngineOptions};
 fn main() {
   logger::init().expect("Failed to initialize logger");
 
-  let opts = MdrEngineOptions { debug: true };
+  let opts = MdrEngineOptions { debug: false };
   let (mut engine, event_loop) = MdrEngine::new(opts);
 
   // Start event loop
