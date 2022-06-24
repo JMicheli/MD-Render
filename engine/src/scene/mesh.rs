@@ -1,4 +1,5 @@
 use bytemuck::{Pod, Zeroable};
+use log::{debug, error};
 
 #[repr(C)]
 #[derive(Default, Copy, Clone, Zeroable, Pod)]
@@ -20,6 +21,50 @@ impl MdrMesh {
     Self {
       vertices: Vec::new(),
       indices: Vec::new(),
+    }
+  }
+
+  pub fn load_obj(file_path: &str) -> Self {
+    let options = tobj::LoadOptions::default();
+    let load_result = tobj::load_obj(file_path, &options);
+
+    let (models, _) = match load_result {
+      Ok(value) => value,
+      Err(e) => {
+        error!("Failed to load obj file: {}, reason: {}", file_path, e);
+        // Return empty mesh
+        return Self::new();
+      }
+    };
+
+    // Take only the first model
+    let model = &models[0];
+
+    // Get positions, indices, and normals for each vertex
+    let positions = &model.mesh.positions;
+    let indices = &model.mesh.indices;
+    let normals = &model.mesh.normals;
+
+    // Loop over vertices
+    let vertex_count = positions.len() / 3;
+    let mut vertices = Vec::with_capacity(vertex_count);
+    for vertex_index in 0..vertex_count {
+      let index = vertex_index * 3;
+      vertices.push(Vertex {
+        position: [
+          positions[index + 0],
+          positions[index + 1],
+          positions[index + 2],
+        ],
+        normal: [normals[index + 0], normals[index + 0], normals[index + 0]],
+        color: [0.0, 1.0, 0.0, 1.0],
+      });
+    }
+
+    debug!("Loaded obj file: {}", file_path);
+    Self {
+      vertices,
+      indices: indices.clone(),
     }
   }
 }

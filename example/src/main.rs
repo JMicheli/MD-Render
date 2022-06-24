@@ -11,7 +11,9 @@ fn main() {
   let (mut engine, event_loop) = MdrEngine::new(opts);
 
   let triangle = MdrSceneObject::test_triangle();
+  let monkey = MdrSceneObject::from_obj("example/src/assets/suzanne.obj");
   engine.scene.add_object(triangle);
+  engine.scene.add_object(monkey);
 
   // Start event loop
   info!("Starting event loop");

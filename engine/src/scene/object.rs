@@ -38,6 +38,13 @@ impl MdrSceneObject {
     }
   }
 
+  pub fn from_obj(file_path: &str) -> Self {
+    let mut new_object = Self::empty();
+    new_object.mesh = MdrMesh::load_obj(file_path);
+
+    new_object
+  }
+
   pub fn test_triangle() -> Self {
     Self {
       mesh: MdrMesh {
