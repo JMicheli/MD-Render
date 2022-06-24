@@ -375,8 +375,16 @@ impl MdrGraphicsContext {
         }
 
         // Push validation layer
-        output_layers.push("VK_LAYER_KHRONOS_validation".to_owned());
-        debug!("Enabled layer: VK_LAYER_KHRONOS_validation")
+        #[cfg(target_os = "windows")]
+        {
+          output_layers.push("VK_LAYER_KHRONOS_validation".to_owned());
+          debug!("Enabled layer: VK_LAYER_KHRONOS_validation")
+        }
+        #[cfg(target_os = "linux")]
+        {
+          output_layers.push("VK_LAYER_LUNARG_standard_validation".to_owned());
+          debug!("Enabled layer: VK_LAYER_LUNARG_standard_validation");
+        }
       }
 
       output_layers
