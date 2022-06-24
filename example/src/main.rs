@@ -7,7 +7,7 @@ use mdr_engine::{MdrEngine, MdrEngineOptions, MdrSceneObject};
 fn main() {
   logger::init().expect("Failed to initialize logger");
 
-  let opts = MdrEngineOptions { debug: false };
+  let opts = MdrEngineOptions { debug: true };
   let (mut engine, event_loop) = MdrEngine::new(opts);
 
   let triangle = MdrSceneObject::test_triangle();

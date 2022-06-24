@@ -1,12 +1,10 @@
-use std::sync::Arc;
-
 use log::{info, trace};
 use winit::{
   event::{Event, WindowEvent},
   event_loop::{ControlFlow, EventLoop},
 };
 
-use crate::{graphics_context::MdrGraphicsContext, scene::MdrScene};
+use crate::{context::MdrGraphicsContext, input::MdrInputContext, scene::MdrScene};
 
 pub struct MdrEngineOptions {
   pub debug: bool,
@@ -16,6 +14,7 @@ pub struct MdrEngine {
   pub scene: MdrScene,
 
   graphics_context: MdrGraphicsContext,
+  input_context: MdrInputContext,
 }
 
 impl MdrEngine {
@@ -23,8 +22,10 @@ impl MdrEngine {
     let event_loop = EventLoop::new();
 
     let engine = Self {
-      graphics_context: MdrGraphicsContext::new(&event_loop, options.debug),
       scene: MdrScene::new(),
+
+      graphics_context: MdrGraphicsContext::new(&event_loop, options.debug),
+      input_context: MdrInputContext::new(),
     };
 
     (engine, event_loop)
@@ -47,7 +48,22 @@ impl MdrEngine {
         self.graphics_context.notify_resized();
         None
       }
-      Event::MainEventsCleared => {
+      Event::WindowEvent {
+        event: WindowEvent::MouseInput { state, button, .. },
+        ..
+      } => {
+        self.input_context.mouse_input(&state, &button);
+        None
+      }
+      Event::WindowEvent {
+        event: WindowEvent::KeyboardInput { input, .. },
+        ..
+      } => {
+        self.input_context.keyboard_input(&input);
+        None
+      }
+      Event::MainEventsCleared => None,
+      Event::RedrawRequested(_) => {
         self.graphics_context.draw(&self.scene);
         None
       }

@@ -23,7 +23,7 @@ use vulkano::{
 };
 
 use crate::{
-  graphics_context::{
+  context::{
     pipeline::MdrPipeline,
     window::{MdrWindow, MdrWindowOptions},
   },
