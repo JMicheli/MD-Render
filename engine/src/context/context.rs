@@ -3,7 +3,7 @@ use std::sync::Arc;
 use winit::{event_loop::EventLoop, window::Window};
 
 use vulkano::{
-  buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
+  buffer::{BufferUsage, CpuAccessibleBuffer},
   command_buffer::{
     AutoCommandBufferBuilder, CommandBufferUsage, PrimaryAutoCommandBuffer, RenderPassBeginInfo,
     SubpassContents,
@@ -295,7 +295,7 @@ impl MdrGraphicsContext {
       PipelineBindPoint::Graphics,
       pipeline.graphics_pipeline.layout().clone(),
       0,
-      camera_descriptor_set.clone(),
+      camera_descriptor_set,
     );
 
     // Render objects
@@ -428,10 +428,15 @@ impl MdrGraphicsContext {
       if debug_enabled {
         // Print out available layers
         debug!("Available debugging layers:");
-        let mut available_layers = vulkano::instance::layers_list().unwrap();
-        while let Some(layer) = available_layers.next() {
-          debug!("\t{}", layer.name());
+        let available_layers = vulkano::instance::layers_list().unwrap();
+
+        let mut available_layers_str = String::new();
+        for layer in available_layers {
+          let layer_str = format!("\t{}\n", layer.name());
+          available_layers_str.push_str(layer_str.as_str())
         }
+        available_layers_str.pop();
+        debug!("Available layers: \n{}", available_layers_str.as_str());
 
         // Push validation layer
         #[cfg(target_os = "windows")]
@@ -628,6 +633,6 @@ impl MdrGraphicsContext {
       frame_futures.push(None);
     }
 
-    return frame_futures;
+    frame_futures
   }
 }

@@ -9,14 +9,6 @@ pub struct MdrTransform {
 }
 
 impl MdrTransform {
-  pub fn new() -> Self {
-    Self {
-      position: Vector3::new(0.0, 0.0, 0.0),
-      rotation: Vector3::new(0.0, 0.0, 0.0),
-      scale: Vector3::new(1.0, 1.0, 1.0),
-    }
-  }
-
   pub fn to_matrix(&self) -> Matrix4<f32> {
     let translate = Matrix4::from_translation(self.position);
     let rotate = Matrix4::from_angle_x(Rad(self.rotation.x))
@@ -25,6 +17,16 @@ impl MdrTransform {
     let scale = Matrix4::from_nonuniform_scale(self.scale.x, self.scale.y, self.scale.z);
 
     scale * rotate * translate
+  }
+}
+
+impl Default for MdrTransform {
+  fn default() -> Self {
+    Self {
+      position: Vector3::new(0.0, 0.0, 0.0),
+      rotation: Vector3::new(0.0, 0.0, 0.0),
+      scale: Vector3::new(1.0, 1.0, 1.0),
+    }
   }
 }
 
@@ -38,15 +40,15 @@ impl MdrSceneObject {
   pub fn new(mesh: MdrMesh) -> Self {
     Self {
       mesh,
-      transform: MdrTransform::new(),
+      transform: MdrTransform::default(),
       material: MdrMaterial::default(),
     }
   }
 
   pub fn empty() -> Self {
     Self {
-      mesh: MdrMesh::new(),
-      transform: MdrTransform::new(),
+      mesh: MdrMesh::default(),
+      transform: MdrTransform::default(),
       material: MdrMaterial::default(),
     }
   }
@@ -80,7 +82,7 @@ impl MdrSceneObject {
         ],
         indices: vec![0, 1, 2],
       },
-      transform: MdrTransform::new(),
+      transform: MdrTransform::default(),
       material: MdrMaterial::default(),
     }
   }

@@ -11,19 +11,13 @@ pub struct Vertex {
 
 vulkano::impl_vertex!(Vertex, position, normal, color);
 
+#[derive(Default)]
 pub struct MdrMesh {
   pub vertices: Vec<Vertex>,
   pub indices: Vec<u32>,
 }
 
 impl MdrMesh {
-  pub fn new() -> Self {
-    Self {
-      vertices: Vec::new(),
-      indices: Vec::new(),
-    }
-  }
-
   pub fn load_obj(file_path: &str) -> Self {
     let options = tobj::GPU_LOAD_OPTIONS;
     let load_result = tobj::load_obj(file_path, &options);
@@ -33,7 +27,7 @@ impl MdrMesh {
       Err(e) => {
         error!("Failed to load obj file: {}, reason: {}", file_path, e);
         // Return empty mesh
-        return Self::new();
+        return Self::default();
       }
     };
 
@@ -51,12 +45,8 @@ impl MdrMesh {
     for vertex_index in 0..vertex_count {
       let index = 3 * vertex_index;
       vertices.push(Vertex {
-        position: [
-          positions[index + 0],
-          positions[index + 1],
-          positions[index + 2],
-        ],
-        normal: [normals[index + 0], normals[index + 1], normals[index + 2]],
+        position: [positions[index], positions[index + 1], positions[index + 2]],
+        normal: [normals[index], normals[index + 1], normals[index + 2]],
         color: [0.8, 0.0, 0.0, 1.0],
       });
     }

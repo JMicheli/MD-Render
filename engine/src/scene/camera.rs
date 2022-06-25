@@ -9,16 +9,6 @@ pub struct MdrCamera {
 }
 
 impl MdrCamera {
-  pub fn new() -> Self {
-    Self {
-      rotation_angle: 0.0,
-
-      field_of_view: std::f32::consts::FRAC_PI_2,
-      near_plane: 0.01,
-      far_plane: 100.0,
-    }
-  }
-
   pub fn rotate(&mut self, rotation: f32) {
     self.rotation_angle += rotation;
   }
@@ -46,5 +36,17 @@ impl MdrCamera {
     );
 
     (world, view, projection)
+  }
+}
+
+impl Default for MdrCamera {
+  fn default() -> Self {
+    Self {
+      rotation_angle: 0.0,
+
+      field_of_view: std::f32::consts::FRAC_PI_2,
+      near_plane: 0.01,
+      far_plane: 100.0,
+    }
   }
 }

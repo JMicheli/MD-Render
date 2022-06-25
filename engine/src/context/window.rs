@@ -37,15 +37,15 @@ impl MdrWindow {
       .build_vk_surface(event_loop, instance.clone())
       .unwrap();
 
-    return Arc::new(Self { surface });
+    Arc::new(Self { surface })
   }
 
   pub fn create_viewport(&self) -> Viewport {
-    return Viewport {
+    Viewport {
       origin: [0.0, 0.0],
       dimensions: self.dimensions().into(),
       depth_range: 0.0..1.0,
-    };
+    }
   }
 
   pub fn set_title(&self, title: &str) {
@@ -60,6 +60,7 @@ impl MdrWindow {
   /// Returns whether or not the window has no visible drawing surface.
   pub fn is_minimized(&self) -> bool {
     let dimensions = self.dimensions();
-    return dimensions.width == 0 || dimensions.height == 0;
+
+    dimensions.width == 0 || dimensions.height == 0
   }
 }
