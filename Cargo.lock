@@ -700,6 +700,7 @@ dependencies = [
 name = "mdr_example_app"
 version = "0.1.0"
 dependencies = [
+ "cgmath",
  "log",
  "mdr_engine",
  "winit",

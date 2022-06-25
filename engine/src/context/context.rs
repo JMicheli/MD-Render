@@ -29,7 +29,10 @@ use crate::{
     window::{MdrWindow, MdrWindowOptions},
   },
   scene::{MdrCamera, MdrScene, MdrSceneObject, Vertex},
-  shaders::{self, basic_vertex_shader::ty::BasicUniformData},
+  shaders::{
+    self,
+    basic_vertex_shader::ty::{TransformUniformData, WorldUniformData},
+  },
 };
 
 /// A Vulkan graphics context, contains Vulkano members.
@@ -297,14 +300,35 @@ impl MdrGraphicsContext {
 
     // Render objects
     for object in scene.scene_objects.iter() {
-      let (vertex_buffer, index_buffer, index_count) =
+      let (vertex_buffer, index_buffer, index_count, transform_buffer) =
         Self::upload_scene_object(&logical_device, object);
 
+      // Bind vertex data
       builder
         .bind_vertex_buffers(0, vertex_buffer.clone())
-        .bind_index_buffer(index_buffer)
-        .draw_indexed(index_count, 1, 0, 0, 0)
-        .unwrap();
+        .bind_index_buffer(index_buffer);
+
+      // Upload object transform
+      let transform_descriptor_set = PersistentDescriptorSet::new(
+        pipeline
+          .graphics_pipeline
+          .layout()
+          .set_layouts()
+          .get(1)
+          .unwrap()
+          .clone(),
+        [WriteDescriptorSet::buffer(0, transform_buffer)],
+      )
+      .unwrap();
+      builder.bind_descriptor_sets(
+        PipelineBindPoint::Graphics,
+        pipeline.graphics_pipeline.layout().clone(),
+        1,
+        transform_descriptor_set.clone(),
+      );
+
+      // Draw call
+      builder.draw_indexed(index_count, 1, 0, 0, 0).unwrap();
     }
 
     // End render pass and build
@@ -322,6 +346,7 @@ impl MdrGraphicsContext {
     Arc<CpuAccessibleBuffer<[Vertex]>>,
     Arc<CpuAccessibleBuffer<[u32]>>,
     u32,
+    Arc<CpuAccessibleBuffer<TransformUniformData>>,
   ) {
     let vertex_buffer = CpuAccessibleBuffer::from_iter(
       logical_device.clone(),
@@ -339,10 +364,21 @@ impl MdrGraphicsContext {
     )
     .unwrap();
 
+    let transform_buffer = CpuAccessibleBuffer::from_data(
+      logical_device.clone(),
+      BufferUsage::uniform_buffer(),
+      false,
+      TransformUniformData {
+        transformation_matrix: object.transform.to_matrix().into(),
+      },
+    )
+    .unwrap();
+
     (
       vertex_buffer,
       index_buffer,
       object.mesh.indices.len() as u32,
+      transform_buffer,
     )
   }
 
@@ -350,14 +386,14 @@ impl MdrGraphicsContext {
     logical_device: &Arc<Device>,
     camera: &MdrCamera,
     aspect_ratio: f32,
-  ) -> Arc<CpuAccessibleBuffer<BasicUniformData>> {
+  ) -> Arc<CpuAccessibleBuffer<WorldUniformData>> {
     let (world, view, proj) = camera.as_wvp(aspect_ratio);
 
     CpuAccessibleBuffer::from_data(
       logical_device.clone(),
       BufferUsage::uniform_buffer(),
       false,
-      BasicUniformData {
+      WorldUniformData {
         world: world.into(),
         view: view.into(),
         proj: proj.into(),

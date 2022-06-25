@@ -7,16 +7,20 @@ layout(location = 2) in vec4 color;
 layout(location = 0) out vec4 v_color;
 layout(location = 1) out vec3 v_normal;
 
-layout(set = 0, binding = 0) uniform BasicUniformData {
+layout(set = 0, binding = 0) uniform WorldUniformData {
     mat4 world;
     mat4 view;
     mat4 proj;
-} ubo;
+} world_data;
+
+layout(set = 1, binding = 0) uniform TransformUniformData {
+  mat4 transformation_matrix;
+} transform_data;
 
 void main() {
-  mat4 model_view = ubo.view * ubo.world;
+  mat4 model_view = world_data.view * world_data.world;
 
   v_normal = transpose(inverse(mat3(model_view))) * normal;
-  gl_Position = ubo.proj * model_view * vec4(position, 1.0);
+  gl_Position = world_data.proj * model_view * vec4(position, 1.0) * transform_data.transformation_matrix;
   v_color = color;
 }
