@@ -11,8 +11,7 @@ fn main() {
   let opts = MdrEngineOptions { debug: true };
   let (mut engine, event_loop) = MdrEngine::new(opts);
 
-  let mut monkey = MdrSceneObject::from_obj("example/src/assets/suzanne.obj");
-  monkey.transform.position = Vector3::new(0.0, 1.0, 0.0);
+  let monkey = MdrSceneObject::from_obj("example/src/assets/suzanne.obj");
   engine.scene.add_object(monkey);
 
   //for i in -5..=5 {

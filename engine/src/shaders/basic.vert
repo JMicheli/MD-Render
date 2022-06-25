@@ -18,9 +18,9 @@ layout(set = 1, binding = 0) uniform TransformUniformData {
 } transform_data;
 
 void main() {
-  mat4 model_view = world_data.view * world_data.world;
+  mat4 model_view = world_data.view * world_data.world * transform_data.transformation_matrix;
 
-  v_normal = transpose(inverse(mat3(model_view))) * normal;
-  gl_Position = world_data.proj * model_view * vec4(position, 1.0) * transform_data.transformation_matrix;
+  v_normal = normalize(mat3(model_view) * normal);
+  gl_Position = world_data.proj * model_view * vec4(position, 1.0);
   v_color = color;
 }
