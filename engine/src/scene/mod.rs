@@ -1,4 +1,5 @@
 mod camera;
+mod material;
 mod mesh;
 mod object;
 mod scene;

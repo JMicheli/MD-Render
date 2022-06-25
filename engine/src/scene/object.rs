@@ -1,6 +1,6 @@
 use cgmath::{Matrix4, Rad, Vector3};
 
-use super::{MdrMesh, Vertex};
+use super::{material::MdrMaterial, MdrMesh, Vertex};
 
 pub struct MdrTransform {
   pub position: Vector3<f32>,
@@ -31,6 +31,7 @@ impl MdrTransform {
 pub struct MdrSceneObject {
   pub mesh: MdrMesh,
   pub transform: MdrTransform,
+  pub material: MdrMaterial,
 }
 
 impl MdrSceneObject {
@@ -38,6 +39,7 @@ impl MdrSceneObject {
     Self {
       mesh,
       transform: MdrTransform::new(),
+      material: MdrMaterial::default(),
     }
   }
 
@@ -45,6 +47,7 @@ impl MdrSceneObject {
     Self {
       mesh: MdrMesh::new(),
       transform: MdrTransform::new(),
+      material: MdrMaterial::default(),
     }
   }
 
@@ -78,6 +81,7 @@ impl MdrSceneObject {
         indices: vec![0, 1, 2],
       },
       transform: MdrTransform::new(),
+      material: MdrMaterial::default(),
     }
   }
 }
