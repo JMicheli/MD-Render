@@ -1,5 +1,6 @@
 mod logger;
 
+use cgmath::Vector3;
 use log::info;
 
 use mdr_engine::{MdrEngine, MdrEngineOptions, MdrSceneObject};
@@ -10,17 +11,17 @@ fn main() {
   let opts = MdrEngineOptions { debug: true };
   let (mut engine, event_loop) = MdrEngine::new(opts);
 
+  // Ground plane
+  let mut ground_plane = MdrSceneObject::from_obj("example/src/assets/plane.obj");
+  ground_plane.transform.position = Vector3::new(0.0, 1.0, 0.0);
+  engine.scene.add_object(ground_plane);
+  // Sphere
+  let mut sphere = MdrSceneObject::from_obj("example/src/assets/sphere.obj");
+  sphere.transform.position = Vector3::new(2.0, -2.0, -1.0);
+  engine.scene.add_object(sphere);
+  // Suzanne
   let monkey = MdrSceneObject::from_obj("example/src/assets/suzanne.obj");
   engine.scene.add_object(monkey);
-
-  //for i in -5..=5 {
-  //  for j in -5..=5 {
-  //    let mut triangle = MdrSceneObject::test_triangle();
-  //    triangle.transform.position = Vector3::new(i as f32, j as f32, 0.0);
-  //
-  //    engine.scene.add_object(triangle);
-  //  }
-  //}
 
   // Start event loop
   info!("Starting event loop");
