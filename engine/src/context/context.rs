@@ -148,14 +148,6 @@ impl MdrGraphicsContext {
     }
 
     self.size_dependent_updates();
-    // Recreate command buffers
-    let command_buffers = Self::create_command_buffers(
-      &self.logical_device,
-      &self.queue,
-      &self.pipeline,
-      &self.framebuffers,
-      scene,
-    );
 
     // First, we acquire the index of the image to draw to
     let (image_index, is_suboptimal, acquire_future) =
@@ -183,10 +175,17 @@ impl MdrGraphicsContext {
     };
     previous_frame_end.cleanup_finished();
 
-    let cmd_buffer = command_buffers[image_index].clone();
+    let command_buffer = Self::create_command_buffer(
+      &self.logical_device,
+      &self.queue,
+      &self.pipeline,
+      &self.framebuffers[image_index],
+      scene,
+    );
+
     let future = previous_frame_end
       .join(acquire_future)
-      .then_execute(self.queue.clone(), cmd_buffer)
+      .then_execute(self.queue.clone(), command_buffer)
       .unwrap()
       .then_swapchain_present(self.queue.clone(), self.swapchain.clone(), image_index)
       .then_signal_fence_and_flush();
@@ -246,82 +245,75 @@ impl MdrGraphicsContext {
     self.window_was_resized = true;
   }
 
-  pub fn create_command_buffers(
+  pub fn create_command_buffer(
     logical_device: &Arc<Device>,
     queue: &Arc<Queue>,
     pipeline: &Arc<MdrPipeline>,
-    framebuffers: &Vec<Arc<Framebuffer>>,
+    framebuffer: &Arc<Framebuffer>,
     scene: &MdrScene,
-  ) -> Vec<Arc<PrimaryAutoCommandBuffer>> {
-    let command_buffers = framebuffers
-      .iter()
-      .map(|framebuffer| {
-        // Create command buffer builder
-        let mut builder = AutoCommandBufferBuilder::primary(
-          logical_device.clone(),
-          queue.family(),
-          CommandBufferUsage::MultipleSubmit,
-        )
+  ) -> Arc<PrimaryAutoCommandBuffer> {
+    // Create command buffer builder
+    let mut builder = AutoCommandBufferBuilder::primary(
+      logical_device.clone(),
+      queue.family(),
+      CommandBufferUsage::OneTimeSubmit,
+    )
+    .unwrap();
+
+    // Clear color used when drawing bacground
+    let clear_color_value = ClearValue::Float([0.1, 0.1, 0.1, 1.0]);
+    let clear_depth_value = ClearValue::Depth(1.0);
+
+    // Build command buffer
+    let mut begin_render_pass_info = RenderPassBeginInfo::framebuffer(framebuffer.clone());
+    begin_render_pass_info.clear_values = vec![Some(clear_color_value), Some(clear_depth_value)];
+    // Begin render pass
+    builder
+      .begin_render_pass(begin_render_pass_info, SubpassContents::Inline)
+      .unwrap();
+
+    // Draw
+    builder.bind_pipeline_graphics(pipeline.graphics_pipeline.clone());
+
+    // Upload camera transforms
+    let aspect_ratio = framebuffer.extent()[0] as f32 / framebuffer.extent()[1] as f32;
+    let camera_buffer = Self::upload_camera_buffer(&logical_device, &scene.camera, aspect_ratio);
+    let camera_descriptor_set = PersistentDescriptorSet::new(
+      pipeline
+        .graphics_pipeline
+        .layout()
+        .set_layouts()
+        .get(0)
+        .unwrap()
+        .clone(),
+      [WriteDescriptorSet::buffer(0, camera_buffer)],
+    )
+    .unwrap();
+    builder.bind_descriptor_sets(
+      PipelineBindPoint::Graphics,
+      pipeline.graphics_pipeline.layout().clone(),
+      0,
+      camera_descriptor_set.clone(),
+    );
+
+    // Render objects
+    for object in scene.scene_objects.iter() {
+      let (vertex_buffer, index_buffer, index_count) =
+        Self::upload_scene_object(&logical_device, object);
+
+      builder
+        .bind_vertex_buffers(0, vertex_buffer.clone())
+        .bind_index_buffer(index_buffer)
+        .draw_indexed(index_count, 1, 0, 0, 0)
         .unwrap();
+    }
 
-        // Clear color used when drawing bacground
-        let clear_color_value = ClearValue::Float([0.1, 0.1, 0.1, 1.0]);
-        let clear_depth_value = ClearValue::Depth(1.0);
+    // End render pass and build
+    builder.end_render_pass().unwrap();
+    let command_buffer = Arc::new(builder.build().unwrap());
 
-        // Build command buffer
-        let mut begin_render_pass_info = RenderPassBeginInfo::framebuffer(framebuffer.clone());
-        begin_render_pass_info.clear_values =
-          vec![Some(clear_color_value), Some(clear_depth_value)];
-        // Begin render pass
-        builder
-          .begin_render_pass(begin_render_pass_info, SubpassContents::Inline)
-          .unwrap();
-
-        // Draw
-        builder.bind_pipeline_graphics(pipeline.graphics_pipeline.clone());
-        // Upload camera transforms
-        let aspect_ratio = framebuffer.extent()[0] as f32 / framebuffer.extent()[1] as f32;
-        let camera_buffer =
-          Self::upload_camera_buffer(&logical_device, &scene.camera, aspect_ratio);
-        let camera_descriptor_set = PersistentDescriptorSet::new(
-          pipeline
-            .graphics_pipeline
-            .layout()
-            .set_layouts()
-            .get(0)
-            .unwrap()
-            .clone(),
-          [WriteDescriptorSet::buffer(0, camera_buffer)],
-        )
-        .unwrap();
-        builder.bind_descriptor_sets(
-          PipelineBindPoint::Graphics,
-          pipeline.graphics_pipeline.layout().clone(),
-          0,
-          camera_descriptor_set.clone(),
-        );
-        // Render objects
-        for object in scene.scene_objects.iter() {
-          let (vertex_buffer, index_buffer, index_count) =
-            Self::upload_scene_object(&logical_device, object);
-
-          builder
-            .bind_vertex_buffers(0, vertex_buffer.clone())
-            .bind_index_buffer(index_buffer)
-            .draw_indexed(index_count, 1, 0, 0, 0)
-            .unwrap();
-        }
-
-        // End render pass
-        builder.end_render_pass().unwrap();
-
-        // Build
-        Arc::new(builder.build().unwrap())
-      })
-      .collect();
-
-    trace!("Created command buffers");
-    command_buffers
+    trace!("Created command buffer");
+    command_buffer
   }
 
   fn upload_scene_object(
