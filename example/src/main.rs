@@ -1,6 +1,5 @@
 mod logger;
 
-use cgmath::Vector3;
 use log::info;
 
 use mdr_engine::{MdrEngine, MdrEngineOptions, MdrSceneObject};

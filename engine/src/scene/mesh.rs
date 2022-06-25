@@ -25,7 +25,7 @@ impl MdrMesh {
   }
 
   pub fn load_obj(file_path: &str) -> Self {
-    let options = tobj::LoadOptions::default();
+    let options = tobj::GPU_LOAD_OPTIONS;
     let load_result = tobj::load_obj(file_path, &options);
 
     let (models, _) = match load_result {
