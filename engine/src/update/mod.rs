@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use crate::{input::MdrInputState, scene::MdrScene};
 
-const CAMERA_ROT_SPEED: f32 = 5.0;
+const CAMERA_ROT_SPEED: f32 = 2.5;
 
 pub struct MdrUpdateContext {
   last_instant: Instant,
@@ -19,9 +19,9 @@ impl MdrUpdateContext {
     let current_instant = Instant::now();
     let dt = (current_instant - self.last_instant).as_secs_f32();
 
-    if input_state.left {
+    if input_state.right {
       scene.camera.rotate(dt * CAMERA_ROT_SPEED);
-    } else if input_state.right {
+    } else if input_state.left {
       scene.camera.rotate(dt * -CAMERA_ROT_SPEED);
     }
 

@@ -72,7 +72,7 @@ impl MdrEngine {
           .update_scene(&mut self.scene, &self.input_context.state);
         None
       }
-      Event::RedrawRequested(_) => {
+      Event::RedrawEventsCleared => {
         self.graphics_context.draw(&self.scene);
         None
       }

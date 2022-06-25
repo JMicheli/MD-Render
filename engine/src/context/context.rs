@@ -1,4 +1,3 @@
-use cgmath::Matrix4;
 use log::{debug, error, info, trace};
 use std::sync::Arc;
 use winit::{event_loop::EventLoop, window::Window};
