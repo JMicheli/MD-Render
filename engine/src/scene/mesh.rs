@@ -57,7 +57,7 @@ impl MdrMesh {
           positions[index + 2],
         ],
         normal: [normals[index + 0], normals[index + 1], normals[index + 2]],
-        color: [0.0, 1.0, 0.0, 1.0],
+        color: [0.8, 0.0, 0.0, 1.0],
       });
     }
 
