@@ -49,14 +49,14 @@ impl MdrMesh {
     let vertex_count = positions.len() / 3;
     let mut vertices = Vec::with_capacity(vertex_count);
     for vertex_index in 0..vertex_count {
-      let index = vertex_index * 3;
+      let index = 3 * vertex_index;
       vertices.push(Vertex {
         position: [
           positions[index + 0],
           positions[index + 1],
           positions[index + 2],
         ],
-        normal: [normals[index + 0], normals[index + 1], normals[index + 1]],
+        normal: [normals[index + 0], normals[index + 1], normals[index + 2]],
         color: [0.0, 1.0, 0.0, 1.0],
       });
     }

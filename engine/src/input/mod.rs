@@ -26,6 +26,10 @@ impl MdrInputContext {
 
   pub fn keyboard_input(&mut self, input: &KeyboardInput) {
     trace!("Keyboard event");
+    if input.virtual_keycode.is_none() {
+      return;
+    }
+
     match input.state {
       ElementState::Pressed => match input.virtual_keycode.unwrap() {
         VirtualKeyCode::Left => self.state.left = true,
