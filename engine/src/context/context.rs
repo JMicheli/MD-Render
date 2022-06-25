@@ -46,8 +46,6 @@ pub struct MdrGraphicsContext {
   pipeline: Arc<MdrPipeline>,
   framebuffers: Vec<Arc<Framebuffer>>,
 
-  command_buffers: Option<Vec<Arc<PrimaryAutoCommandBuffer>>>,
-
   window_was_resized: bool,
   should_recreate_swapchain: bool,
   frame_futures: Vec<Option<Box<dyn GpuFuture>>>,
@@ -131,8 +129,6 @@ impl MdrGraphicsContext {
       pipeline,
       framebuffers,
 
-      command_buffers: None,
-
       window_was_resized: false,
       should_recreate_swapchain: false,
       frame_futures,
@@ -153,13 +149,13 @@ impl MdrGraphicsContext {
 
     self.size_dependent_updates();
     // Recreate command buffers
-    self.command_buffers = Some(Self::create_command_buffers(
+    let command_buffers = Self::create_command_buffers(
       &self.logical_device,
       &self.queue,
       &self.pipeline,
       &self.framebuffers,
       scene,
-    ));
+    );
 
     // First, we acquire the index of the image to draw to
     let (image_index, is_suboptimal, acquire_future) =
@@ -187,7 +183,7 @@ impl MdrGraphicsContext {
     };
     previous_frame_end.cleanup_finished();
 
-    let cmd_buffer = self.command_buffers.as_ref().unwrap()[image_index].clone();
+    let cmd_buffer = command_buffers[image_index].clone();
     let future = previous_frame_end
       .join(acquire_future)
       .then_execute(self.queue.clone(), cmd_buffer)

@@ -19,6 +19,10 @@ impl MdrCamera {
     }
   }
 
+  pub fn rotate(&mut self, rotation: f32) {
+    self.rotation_angle += rotation;
+  }
+
   pub fn as_wvp(&self, aspect_ratio: f32) -> (Matrix4<f32>, Matrix4<f32>, Matrix4<f32>) {
     let rotation = Matrix3::from_angle_y(Rad(self.rotation_angle));
     let world = Matrix4::from(rotation);

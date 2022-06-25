@@ -4,7 +4,9 @@ use winit::{
   event_loop::{ControlFlow, EventLoop},
 };
 
-use crate::{context::MdrGraphicsContext, input::MdrInputContext, scene::MdrScene};
+use crate::{
+  context::MdrGraphicsContext, input::MdrInputContext, scene::MdrScene, update::MdrUpdateContext,
+};
 
 pub struct MdrEngineOptions {
   pub debug: bool,
@@ -15,6 +17,7 @@ pub struct MdrEngine {
 
   graphics_context: MdrGraphicsContext,
   input_context: MdrInputContext,
+  update_context: MdrUpdateContext,
 }
 
 impl MdrEngine {
@@ -26,6 +29,7 @@ impl MdrEngine {
 
       graphics_context: MdrGraphicsContext::new(&event_loop, options.debug),
       input_context: MdrInputContext::new(),
+      update_context: MdrUpdateContext::new(),
     };
 
     (engine, event_loop)
@@ -41,7 +45,7 @@ impl MdrEngine {
         Some(ControlFlow::Exit)
       }
       Event::WindowEvent {
-        event: WindowEvent::Resized(size),
+        event: WindowEvent::Resized(_),
         ..
       } => {
         trace!("Resized");
@@ -62,7 +66,12 @@ impl MdrEngine {
         self.input_context.keyboard_input(&input);
         None
       }
-      Event::MainEventsCleared => None,
+      Event::MainEventsCleared => {
+        self
+          .update_context
+          .update_scene(&mut self.scene, &self.input_context.state);
+        None
+      }
       Event::RedrawRequested(_) => {
         self.graphics_context.draw(&self.scene);
         None
