@@ -393,14 +393,15 @@ impl MdrGraphicsContext {
     camera: &MdrCamera,
     aspect_ratio: f32,
   ) -> Arc<CpuAccessibleBuffer<CameraUniformData>> {
-    let (view, proj) = camera.as_view_proj(aspect_ratio);
+    let (view, proj) = camera.get_view_proj(aspect_ratio);
+    let pos = camera.scene_position();
 
     CpuAccessibleBuffer::from_data(
       logical_device.clone(),
       BufferUsage::uniform_buffer(),
       false,
       CameraUniformData {
-        camera_pos: camera.position_array(),
+        camera_pos: [pos.x, pos.y, pos.z],
         _dummy0: [0, 0, 0, 0],
         view: view.into(),
         proj: proj.into(),

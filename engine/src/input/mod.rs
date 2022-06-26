@@ -6,6 +6,11 @@ pub struct MdrInputState {
   pub up: bool,
   pub right: bool,
   pub down: bool,
+
+  pub w: bool,
+  pub a: bool,
+  pub s: bool,
+  pub d: bool,
 }
 
 pub struct MdrInputContext {
@@ -20,6 +25,11 @@ impl MdrInputContext {
         up: false,
         right: false,
         down: false,
+
+        w: false,
+        a: false,
+        s: false,
+        d: false,
       },
     }
   }
@@ -36,6 +46,12 @@ impl MdrInputContext {
         VirtualKeyCode::Up => self.state.up = true,
         VirtualKeyCode::Right => self.state.right = true,
         VirtualKeyCode::Down => self.state.down = true,
+
+        VirtualKeyCode::W => self.state.w = true,
+        VirtualKeyCode::A => self.state.a = true,
+        VirtualKeyCode::S => self.state.s = true,
+        VirtualKeyCode::D => self.state.d = true,
+
         _ => (),
       },
       ElementState::Released => match input.virtual_keycode.unwrap() {
@@ -43,12 +59,18 @@ impl MdrInputContext {
         VirtualKeyCode::Up => self.state.up = false,
         VirtualKeyCode::Right => self.state.right = false,
         VirtualKeyCode::Down => self.state.down = false,
+
+        VirtualKeyCode::W => self.state.w = false,
+        VirtualKeyCode::A => self.state.a = false,
+        VirtualKeyCode::S => self.state.s = false,
+        VirtualKeyCode::D => self.state.d = false,
+
         _ => (),
       },
     }
   }
 
-  pub fn mouse_input(&mut self, state: &ElementState, button: &MouseButton) {
+  pub fn mouse_input(&mut self, _state: &ElementState, _button: &MouseButton) {
     trace!("Mouse event");
   }
 }

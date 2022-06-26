@@ -1,4 +1,4 @@
-use cgmath::{Matrix4, Point3, Rad, Vector3};
+use cgmath::{InnerSpace, Matrix4, Point3, Rad, Vector3};
 
 pub struct MdrCamera {
   pub pos: Vector3<f32>,
@@ -13,17 +13,28 @@ pub struct MdrCamera {
 }
 
 impl MdrCamera {
-  pub fn position_array(&self) -> [f32; 3] {
-    let x = self.pos.x + self.radius * f32::sin(self.phi) * f32::cos(self.theta);
-    let y = self.pos.y + self.radius * f32::sin(self.phi) * f32::sin(self.theta);
-    let z = self.pos.z + self.radius * f32::cos(self.phi);
+  pub fn scene_position(&self) -> Vector3<f32> {
+    let theta_rad = Rad(self.theta).0;
+    let phi_rad = Rad(self.phi).0;
 
-    [x, y, z]
+    let x = self.pos.x + self.radius * f32::sin(phi_rad) * f32::cos(theta_rad);
+    let y = self.pos.z + self.radius * f32::cos(phi_rad);
+    let z = self.pos.y + self.radius * f32::sin(phi_rad) * f32::sin(theta_rad);
+
+    Vector3::new(x, y, z)
   }
 
-  pub fn as_view_proj(&self, aspect_ratio: f32) -> (Matrix4<f32>, Matrix4<f32>) {
+  pub fn normalized_position(&self) -> Vector3<f32> {
+    let position = self.scene_position();
+    let norm_position = position.magnitude();
+
+    (1.0 / norm_position) * position
+  }
+
+  pub fn get_view_proj(&self, aspect_ratio: f32) -> (Matrix4<f32>, Matrix4<f32>) {
     let view = {
-      let position = self.position_array();
+      let position = self.normalized_position();
+
       let eye_position = Point3::new(position[0], position[1], position[2]);
       let center_position = Point3::new(self.pos.x, self.pos.y, self.pos.z);
 
@@ -51,7 +62,7 @@ impl Default for MdrCamera {
       pos: Vector3::new(0.0, 0.0, 0.0),
       radius: 1.0,
       theta: 0.0,
-      phi: 45.0,
+      phi: 90.0,
 
       field_of_view: std::f32::consts::FRAC_PI_2,
       near_plane: 0.01,
