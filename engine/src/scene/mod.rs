@@ -4,6 +4,7 @@ mod mesh;
 mod object;
 
 pub use camera::MdrCamera;
+pub use material::MdrMaterial;
 pub use mesh::{MdrMesh, Vertex};
 pub use object::{MdrSceneObject, MdrTransform};
 

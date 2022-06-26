@@ -21,9 +21,9 @@ impl MdrUpdateContext {
     let dt = (current_instant - self.last_instant).as_secs_f32();
 
     if input_state.right {
-      scene.camera.rotate(dt * CAMERA_ROT_SPEED);
+      scene.camera.theta += dt * CAMERA_ROT_SPEED;
     } else if input_state.left {
-      scene.camera.rotate(dt * -CAMERA_ROT_SPEED);
+      scene.camera.theta += dt * -CAMERA_ROT_SPEED;
     }
 
     if !scene.scene_objects.is_empty() {

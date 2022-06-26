@@ -31,7 +31,7 @@ use crate::{
   scene::{MdrCamera, MdrScene, MdrSceneObject, Vertex},
   shaders::{
     self,
-    basic_vertex_shader::ty::{TransformUniformData, WorldUniformData},
+    basic_vertex_shader::ty::{CameraUniformData, ObjectUniformData},
   },
 };
 
@@ -346,7 +346,7 @@ impl MdrGraphicsContext {
     Arc<CpuAccessibleBuffer<[Vertex]>>,
     Arc<CpuAccessibleBuffer<[u32]>>,
     u32,
-    Arc<CpuAccessibleBuffer<TransformUniformData>>,
+    Arc<CpuAccessibleBuffer<ObjectUniformData>>,
   ) {
     let vertex_buffer = CpuAccessibleBuffer::from_iter(
       logical_device.clone(),
@@ -368,7 +368,13 @@ impl MdrGraphicsContext {
       logical_device.clone(),
       BufferUsage::uniform_buffer(),
       false,
-      TransformUniformData {
+      ObjectUniformData {
+        diffuse_color: object.material.diffuse_color.into(),
+        alpha: object.material.alpha,
+
+        specular_color: object.material.specular_color.into(),
+        shininess: object.material.shininess,
+
         transformation_matrix: object.transform.to_matrix().into(),
       },
     )
@@ -386,15 +392,16 @@ impl MdrGraphicsContext {
     logical_device: &Arc<Device>,
     camera: &MdrCamera,
     aspect_ratio: f32,
-  ) -> Arc<CpuAccessibleBuffer<WorldUniformData>> {
-    let (world, view, proj) = camera.as_wvp(aspect_ratio);
+  ) -> Arc<CpuAccessibleBuffer<CameraUniformData>> {
+    let (view, proj) = camera.as_view_proj(aspect_ratio);
 
     CpuAccessibleBuffer::from_data(
       logical_device.clone(),
       BufferUsage::uniform_buffer(),
       false,
-      WorldUniformData {
-        world: world.into(),
+      CameraUniformData {
+        camera_pos: camera.position_array(),
+        _dummy0: [0, 0, 0, 0],
         view: view.into(),
         proj: proj.into(),
       },

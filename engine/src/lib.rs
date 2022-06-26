@@ -6,4 +6,4 @@ mod shaders;
 mod update;
 
 pub use engine::{MdrEngine, MdrEngineOptions};
-pub use scene::{MdrSceneObject, MdrTransform};
+pub use scene::{MdrMaterial, MdrSceneObject, MdrTransform};
