@@ -10,6 +10,6 @@ After cloning the repository, enter the new directory and run the example using:
 
 ## About the example
 
-Presently, the example should display a simple scene containing a red, high-poly version of the [Blender monkey mesh](https://docs.blender.org/manual/en/latest/modeling/meshes/primitives.html#monkey) (her name is Suzanne), a green icosphere, and a grey ground plane.
+The example should display a simple scene containing a red, high-poly version of the [Blender monkey mesh](https://docs.blender.org/manual/en/latest/modeling/meshes/primitives.html#monkey) (her name is Suzanne), a green icosphere, and a grey ground plane.
 
-At present, the scene uses basic directional lighting and diffuse-only shading.
+At present, the scene uses basic directional lighting and diffuse-only shading, and provides basic spherical camera controls. The camera can be rotated left/right and pitched up/down using the respective arrow keys.
