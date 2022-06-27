@@ -12,7 +12,7 @@ fn main() {
   let (mut engine, event_loop) = MdrEngine::new(opts);
 
   // Suzanne
-  let mut monkey = MdrSceneObject::from_obj("example/src/assets/suzanne.obj");
+  let mut monkey = MdrSceneObject::from_obj("example/src/assets/detailed_suzanne.obj");
   monkey.material = MdrMaterial::red();
   engine.scene.add_object(monkey);
   // Sphere

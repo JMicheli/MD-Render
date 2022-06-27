@@ -13,7 +13,7 @@ pub struct MdrCamera {
 }
 
 impl MdrCamera {
-  pub fn scene_position(&self) -> Vector3<f32> {
+  pub fn get_scene_position(&self) -> Vector3<f32> {
     let theta_rad = Rad(self.theta).0;
     let phi_rad = Rad(self.phi).0;
 
@@ -25,7 +25,7 @@ impl MdrCamera {
   }
 
   pub fn normalized_position(&self) -> Vector3<f32> {
-    let position = self.scene_position();
+    let position = self.get_scene_position();
     let norm_position = position.magnitude();
 
     (1.0 / norm_position) * position
