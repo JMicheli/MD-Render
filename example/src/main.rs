@@ -7,8 +7,14 @@ use log::info;
 
 use mdr_engine::{MdrEngine, MdrEngineOptions, MdrMaterial, MdrSceneObject};
 
-// TODO Provide better log/debug control interface
+// Build debug configuration
+#[cfg(debug_assertions)]
+const MDR_LOG_LEVEL: &str = "debug";
+#[cfg(not(debug_assertions))]
 const MDR_LOG_LEVEL: &str = "info";
+#[cfg(debug_assertions)]
+const DEBUG_ENABLED: bool = true;
+#[cfg(not(debug_assertions))]
 const DEBUG_ENABLED: bool = false;
 
 fn main() {
