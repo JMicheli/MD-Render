@@ -1,14 +1,23 @@
 mod logger;
 
+use std::env;
+
 use cgmath::Vector3;
 use log::info;
 
 use mdr_engine::{MdrEngine, MdrEngineOptions, MdrMaterial, MdrSceneObject};
 
-fn main() {
-  logger::init().expect("Failed to initialize logger");
+// TODO Provide better log/debug control interface
+const MDR_LOG_LEVEL: &str = "info";
+const DEBUG_ENABLED: bool = false;
 
-  let opts = MdrEngineOptions { debug: false };
+fn main() {
+  env::set_var("MDR_LOG_LEVEL", MDR_LOG_LEVEL);
+  logger::init_from_env().expect("Failed to initialize logger");
+
+  let opts = MdrEngineOptions {
+    debug: DEBUG_ENABLED,
+  };
   let (mut engine, event_loop) = MdrEngine::new(opts);
 
   // Suzanne
