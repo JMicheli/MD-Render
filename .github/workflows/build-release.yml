@@ -93,31 +93,31 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: basic-example-x86_64-unknown-linux-gnu
-          path: artifact_linux
+          path: MDR-${{ github.ref }}-linux
 
       - name: Download assets artifact (Linux)
         uses: actions/download-artifact@v3
         with:
           name: basic-example-assets
-          path: artifact_linux/assets
+          path: MDR-${{ github.ref }}-linux/assets
       
       - name: Download basic example artifact (Windows)
         uses: actions/download-artifact@v3
         with:
           name: basic-example-x86_64-unknown-linux-gnu
-          path: artifact_windows
+          path: MDR-${{ github.ref }}-windows
 
       - name: Download assets artifact (Windows)
         uses: actions/download-artifact@v3
         with:
           name: basic-example-assets
-          path: artifact_windows/assets
+          path: MDR-${{ github.ref }}-windows/assets
 
       - name: Zip artifacts
         run: |
           sudo apt-get install -y zip
-          zip -r prod-artifact-linux.zip artifact_linux/*
-          zip -r prod-artifact-windows.zip artifact_windows/*
+          zip -r prod-artifact-linux.zip MDR-${{ github.ref }}-windows/*
+          zip -r prod-artifact-windows.zip MDR-${{ github.ref }}-windows/*
 
       - name: Upload release artifact (Linux)
         uses: actions/upload-release-asset@v1
@@ -126,7 +126,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: prod-artifact-linux.zip 
-          asset_name: MD-Render-x64-Linux.zip
+          asset_name: MDR-${{ github.ref }}-x64-Linux.zip
           asset_content_type: application/zip
 
       - name: Upload release artifact (Windows)
@@ -136,5 +136,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: prod-artifact-windows.zip 
-          asset_name: MD-Render-x64-Windows.zip
+          asset_name: MDR-${{ github.ref }}-x64-Windows.zip
           asset_content_type: application/zip
