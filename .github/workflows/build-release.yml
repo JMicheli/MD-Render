@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: basic-example-x86_64-pc-windows-msvc
-          path: target/x86_64-pc-windows-msvc/release/examples/basic
+          path: target/x86_64-pc-windows-msvc/release/examples/basic.exe
 
   # Download artifact and create release
   release:
@@ -116,8 +116,8 @@ jobs:
       - name: Zip artifacts
         run: |
           sudo apt-get install -y zip
-          zip -r artifact/prod-artifact-linux.zip artifact_linux
-          zip -r artifact/prod-artifact-windows.zip artifact_windows
+          zip -r prod-artifact-linux.zip artifact_linux
+          zip -r prod-artifact-windows.zip artifact_windows
 
       - name: Upload release artifact (Linux)
         uses: actions/upload-release-asset@v1
@@ -125,7 +125,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifact/prod-artifact-linux.zip 
+          asset_path: prod-artifact-linux.zip 
           asset_name: MD-Render-x64-Linux.zip
           asset_content_type: application/zip
 
@@ -135,6 +135,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifact/prod-artifact-windows.zip 
+          asset_path: prod-artifact-windows.zip 
           asset_name: MD-Render-x64-Windows.zip
           asset_content_type: application/zip
