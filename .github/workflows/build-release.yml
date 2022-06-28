@@ -22,17 +22,24 @@ jobs:
         with:
           toolchain: stable
       
-      - name: Build release
+      - name: Build basic example (Linux)
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --all-features
+          args: --examples --release --target x86_64-unknown-linux-gnu
       
-      - name: Upload build artifact
+      - name: Upload basic example artifact (Linux)
         uses: actions/upload-artifact@v3
         with:
-          name: md-render-release
-          path: target/release/
+          name: basic-example-x86_64-unknown-linux-gnu
+          path: target/md-render-x86_64-unknown-linux-gnu/release/examples/basic
+        
+        - name: Upload basic example assets
+          uses: actions/upload-artifact@v3
+          with:
+            name: basic-example-assets
+            path: examples/basic/assets/
+
 
   # Download artifact and create release
   release:
@@ -56,11 +63,17 @@ jobs:
           tag_name: release-${{ github.ref }}
           body_path: changelog.md
 
-      - name: Download artifact
+      - name: Download Linux artifact
         uses: actions/download-artifact@v3
         with:
-          name: md-render-release
-          path: artifact
+          name: basic-example-x86_64-unknown-linux-gnu
+          path: artifact_linux
+
+      - name: Download assets artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: basic-example-x86_64-unknown-linux-gnu
+          path: artifact_linux/assets
 
       - name: Zip artifact
         run: |

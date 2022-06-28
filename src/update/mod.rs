@@ -3,7 +3,6 @@ use std::time::Instant;
 use crate::{input::MdrInputState, scene::MdrScene};
 
 const CAMERA_ROT_SPEED: f32 = 2.5;
-const CAMERA_MOV_SPEED: f32 = 1.0;
 
 pub struct MdrUpdateContext {
   last_instant: Instant,

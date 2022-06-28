@@ -697,16 +697,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mdr_example_app"
-version = "0.1.0"
-dependencies = [
- "cgmath",
- "log",
- "mdr_engine",
- "winit",
-]
-
-[[package]]
 name = "memchr"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

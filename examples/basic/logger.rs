@@ -3,8 +3,6 @@ use std::env;
 pub use log::SetLoggerError;
 use log::{debug, LevelFilter};
 
-const DEFAULT_LOG_LEVEL: &str = "info";
-
 static LOGGER: MdrLogger = MdrLogger;
 
 pub struct MdrLogger;
