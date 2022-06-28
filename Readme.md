@@ -26,4 +26,4 @@ Navigate into the directory and run the `basic` example with cargo. This will ca
 
 `cargo run --example basic`
 
-
+© Joseph W. Micheli 2022, all rights reserved. See `license.txt` for further information.
