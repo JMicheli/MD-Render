@@ -106,7 +106,7 @@ jobs:
       - name: Download basic example artifact (Windows)
         uses: actions/download-artifact@v3
         with:
-          name: basic-example-x86_64-unknown-linux-gnu
+          name: basic-example-x86_64-pc-windows-msvc
           path: MDR-windows
 
       - name: Download assets artifact (Windows)
@@ -133,7 +133,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: linux-build-results.zip 
-          asset_name: MDR-x64-Linux.zip
+          asset_name: MDR-basic-example-x64-Linux.zip
           asset_content_type: application/zip
 
       - name: Upload release artifact (Windows)
@@ -143,5 +143,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: windows-build-results.zip 
-          asset_name: MDR-x64-Windows.zip
+          asset_name: MDR-basic-example-x64-Windows.zip
           asset_content_type: application/zip
