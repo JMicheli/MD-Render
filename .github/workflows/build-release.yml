@@ -89,44 +89,51 @@ jobs:
           tag_name: release-${{ github.ref }}
           body_path: changelog.md
 
+      # Linux release assembly
       - name: Download basic example artifact (Linux)
         uses: actions/download-artifact@v3
         with:
           name: basic-example-x86_64-unknown-linux-gnu
-          path: MDR-${{ github.ref }}-linux
+          path: MDR-linux
 
       - name: Download assets artifact (Linux)
         uses: actions/download-artifact@v3
         with:
           name: basic-example-assets
-          path: MDR-${{ github.ref }}-linux/assets
+          path: MDR-linux/assets
       
+      # Windows release assembly
       - name: Download basic example artifact (Windows)
         uses: actions/download-artifact@v3
         with:
           name: basic-example-x86_64-unknown-linux-gnu
-          path: MDR-${{ github.ref }}-windows
+          path: MDR-windows
 
       - name: Download assets artifact (Windows)
         uses: actions/download-artifact@v3
         with:
           name: basic-example-assets
-          path: MDR-${{ github.ref }}-windows/assets
+          path: MDR-windows/assets
 
+      # Zip Linux and Windows artifacts
       - name: Zip artifacts
         run: |
           sudo apt-get install -y zip
-          zip -r prod-artifact-linux.zip MDR-${{ github.ref }}-windows/*
-          zip -r prod-artifact-windows.zip MDR-${{ github.ref }}-windows/*
+          cd MDR-linux
+          zip -r ../linux-build-results.zip *
+          cd ../MDR-windows
+          zip -r ../windows-build-results.zip *
+          cd ..
 
+      # Upload release zips
       - name: Upload release artifact (Linux)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: prod-artifact-linux.zip 
-          asset_name: MDR-${{ github.ref }}-x64-Linux.zip
+          asset_path: linux-build-results.zip 
+          asset_name: MDR-x64-Linux.zip
           asset_content_type: application/zip
 
       - name: Upload release artifact (Windows)
@@ -135,6 +142,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: prod-artifact-windows.zip 
-          asset_name: MDR-${{ github.ref }}-x64-Windows.zip
+          asset_path: windows-build-results.zip 
+          asset_name: MDR-x64-Windows.zip
           asset_content_type: application/zip

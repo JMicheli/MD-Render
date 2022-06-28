@@ -5,7 +5,7 @@ use log::{debug, LevelFilter};
 
 static LOGGER: MdrLogger = MdrLogger;
 
-pub struct MdrLogger;
+struct MdrLogger;
 
 impl log::Log for MdrLogger {
   fn enabled(&self, metadata: &log::Metadata) -> bool {

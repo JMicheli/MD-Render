@@ -1,11 +1,9 @@
-mod logger;
-
 use std::{env, path::Path};
 
 use cgmath::Vector3;
 use log::info;
 
-use mdr_engine::{MdrEngine, MdrEngineOptions, MdrMaterial, MdrSceneObject};
+use mdr_engine::{logger, MdrEngine, MdrEngineOptions, MdrMaterial, MdrSceneObject};
 
 fn main() {
   env::set_var("MDR_LOG_LEVEL", MDR_LOG_LEVEL);
