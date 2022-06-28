@@ -7,32 +7,15 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  # Build application and upload artifact
-  build-prod:
+  # Linux - Build application and upload artifact
+  build-linux:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
         with:
           submodules: recursive
-
-      - name: Install rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-
-      - name: Build basic example (Linux)
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --examples --release --target x86_64-unknown-linux-gnu
-
-      - name: Upload basic example artifact (Linux)
-        uses: actions/upload-artifact@v3
-        with:
-          name: basic-example-x86_64-unknown-linux-gnu
-          path: target/md-render-x86_64-unknown-linux-gnu/release/examples/basic
 
       - name: Upload basic example assets
         uses: actions/upload-artifact@v3
@@ -40,14 +23,58 @@ jobs:
           name: basic-example-assets
           path: examples/basic/assets/
 
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Build basic example
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --examples --release --target x86_64-unknown-linux-gnu
+
+      - name: Upload basic example artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: basic-example-x86_64-unknown-linux-gnu
+          path: target/x86_64-unknown-linux-gnu/release/examples/basic
+
+  # Windows - Build application and upload artifact
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Build basic example
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --examples --release --target x86_64-pc-windows-msvc
+      
+      - name: Upload basic example artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: basic-example-x86_64-pc-windows-msvc
+          path: target/x86_64-pc-windows-msvc/release/examples/basic
+
   # Download artifact and create release
   release:
-    needs: build-prod
+    needs: [build-linux, build-windows]
     permissions: write-all
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v3
 
       - name: Create release
@@ -62,30 +89,52 @@ jobs:
           tag_name: release-${{ github.ref }}
           body_path: changelog.md
 
-      - name: Download Linux artifact
+      - name: Download basic example artifact (Linux)
         uses: actions/download-artifact@v3
         with:
           name: basic-example-x86_64-unknown-linux-gnu
           path: artifact_linux
 
-      - name: Download assets artifact
+      - name: Download assets artifact (Linux)
+        uses: actions/download-artifact@v3
+        with:
+          name: basic-example-assets
+          path: artifact_linux/assets
+      
+      - name: Download basic example artifact (Windows)
         uses: actions/download-artifact@v3
         with:
           name: basic-example-x86_64-unknown-linux-gnu
-          path: artifact_linux/assets
+          path: artifact_windows
 
-      - name: Zip artifact
+      - name: Download assets artifact (Windows)
+        uses: actions/download-artifact@v3
+        with:
+          name: basic-example-assets
+          path: artifact_windows/assets
+
+      - name: Zip artifacts
         run: |
           sudo apt-get install -y zip
-          zip -r artifact/prod-artifact.zip artifact
+          zip -r artifact/prod-artifact-linux.zip artifact_linux
+          zip -r artifact/prod-artifact-windows.zip artifact_windows
 
-      - name: Upload release artifact
+      - name: Upload release artifact (Linux)
         uses: actions/upload-release-asset@v1
-        id: upload_release_asset 
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifact/prod-artifact.zip 
-          asset_name: MD-Render.zip
+          asset_path: artifact/prod-artifact-linux.zip 
+          asset_name: MD-Render-x64-Linux.zip
+          asset_content_type: application/zip
+
+      - name: Upload release artifact (Windows)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifact/prod-artifact-windows.zip 
+          asset_name: MD-Render-x64-Windows.zip
           asset_content_type: application/zip
