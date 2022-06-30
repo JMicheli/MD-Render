@@ -1,4 +1,4 @@
-use cgmath::{InnerSpace, Matrix4, Point3, Rad, Vector3};
+use nalgebra::{Matrix4, Vector3};
 
 pub struct MdrCamera {
   pub pos: Vector3<f32>,
