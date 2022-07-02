@@ -73,6 +73,9 @@ impl MdrEngine {
         None
       }
       Event::RedrawEventsCleared => {
+        self
+          .graphics_context
+          .update_scene_aspect_ratio(&mut self.scene);
         self.graphics_context.draw(&self.scene);
         None
       }

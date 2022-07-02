@@ -9,25 +9,27 @@ layout(location = 1) out vec3 v_normal;
 layout(location = 2) out vec4 v_color;
 
 layout(set = 0, binding = 0) uniform CameraUniformData {
-  vec3 camera_pos;
-
   mat4 view;
   mat4 proj;
-} world_data;
+} camera;
 
-layout(set = 1, binding = 0) uniform ObjectUniformData {
+layout(set = 1, binding = 0) uniform MaterialUniformData {
   vec3 diffuse_color;
   float alpha;
 
   vec3 specular_color;
   float shininess;
+} material;
 
-  mat4 transformation_matrix;
-} object_data;
+layout(push_constant) uniform ObjectPushConstants
+{
+	mat4 transformation_matrix;
+} object;
+
 
 void main() {
-  v_normal = normalize(mat3(world_data.view) * normal);
-  v_position =  object_data.transformation_matrix * vec4(position, 1.0);
-  v_color = vec4(object_data.diffuse_color, object_data.alpha);
-  gl_Position = world_data.proj * world_data.view * v_position;
+  v_normal = normalize(mat3(camera.view) * normal);
+  v_position =  object.transformation_matrix * vec4(position, 1.0);
+  v_color = vec4(material.diffuse_color, material.alpha);
+  gl_Position = camera.proj * camera.view * v_position;
 }

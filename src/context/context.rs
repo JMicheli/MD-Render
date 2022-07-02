@@ -31,7 +31,7 @@ use crate::{
   scene::{MdrCamera, MdrScene, MdrSceneObject, Vertex},
   shaders::{
     self,
-    basic_vertex_shader::ty::{CameraUniformData, ObjectUniformData},
+    basic_vertex_shader::ty::{CameraUniformData, MaterialUniformData, ObjectPushConstants},
   },
 };
 
@@ -50,6 +50,7 @@ pub struct MdrGraphicsContext {
 
   window_was_resized: bool,
   should_recreate_swapchain: bool,
+  updated_aspect_ratio: bool,
   frame_futures: Vec<Option<Box<dyn GpuFuture>>>,
   previous_frame_index: usize,
   vs: Arc<ShaderModule>,
@@ -133,6 +134,7 @@ impl MdrGraphicsContext {
 
       window_was_resized: false,
       should_recreate_swapchain: false,
+      updated_aspect_ratio: true,
       frame_futures,
       previous_frame_index: 0,
       vs,
@@ -238,13 +240,27 @@ impl MdrGraphicsContext {
           &self.render_pass,
           &self.viewport,
         );
+
+        self.updated_aspect_ratio = true;
       }
     }
+  }
+
+  fn aspect_ratio(&self) -> f32 {
+    let framebuffer = self.framebuffers[0].clone();
+    framebuffer.extent()[0] as f32 / framebuffer.extent()[1] as f32
   }
 
   /// Set context to trigger size-dependent reinitialization
   pub fn notify_resized(&mut self) {
     self.window_was_resized = true;
+  }
+
+  pub fn update_scene_aspect_ratio(&mut self, scene: &mut MdrScene) {
+    if self.updated_aspect_ratio {
+      scene.camera.aspect_ratio = self.aspect_ratio();
+      self.updated_aspect_ratio = false;
+    }
   }
 
   pub fn create_command_buffer(
@@ -278,8 +294,7 @@ impl MdrGraphicsContext {
     builder.bind_pipeline_graphics(pipeline.graphics_pipeline.clone());
 
     // Upload camera transforms
-    let aspect_ratio = framebuffer.extent()[0] as f32 / framebuffer.extent()[1] as f32;
-    let camera_buffer = Self::upload_camera_buffer(&logical_device, &scene.camera, aspect_ratio);
+    let camera_buffer = Self::upload_camera_buffer(&logical_device, &scene.camera);
     let camera_descriptor_set = PersistentDescriptorSet::new(
       pipeline
         .graphics_pipeline
@@ -300,7 +315,7 @@ impl MdrGraphicsContext {
 
     // Render objects
     for object in scene.scene_objects.iter() {
-      let (vertex_buffer, index_buffer, index_count, transform_buffer) =
+      let (vertex_buffer, index_buffer, index_count, material_buffer, push_buffer) =
         Self::upload_scene_object(&logical_device, object);
 
       // Bind vertex data
@@ -308,8 +323,9 @@ impl MdrGraphicsContext {
         .bind_vertex_buffers(0, vertex_buffer.clone())
         .bind_index_buffer(index_buffer);
 
-      // Upload object transform
-      let transform_descriptor_set = PersistentDescriptorSet::new(
+      // Upload material data
+      // TODO Order by material and bind once per mat
+      let material_descriptor_set = PersistentDescriptorSet::new(
         pipeline
           .graphics_pipeline
           .layout()
@@ -317,14 +333,32 @@ impl MdrGraphicsContext {
           .get(1)
           .unwrap()
           .clone(),
-        [WriteDescriptorSet::buffer(0, transform_buffer)],
+        [WriteDescriptorSet::buffer(0, material_buffer)],
       )
       .unwrap();
       builder.bind_descriptor_sets(
         PipelineBindPoint::Graphics,
         pipeline.graphics_pipeline.layout().clone(),
         1,
-        transform_descriptor_set.clone(),
+        material_descriptor_set.clone(),
+      );
+
+      // Push constants for object transform
+      let push_descriptor_set = PersistentDescriptorSet::new(
+        pipeline
+          .graphics_pipeline
+          .layout()
+          .set_layouts()
+          .get(0)
+          .unwrap()
+          .clone(),
+        [WriteDescriptorSet::buffer(0, push_buffer)],
+      )
+      .unwrap();
+      builder.push_constants(
+        pipeline.graphics_pipeline.layout().clone(),
+        0,
+        push_descriptor_set,
       );
 
       // Draw call
@@ -346,7 +380,8 @@ impl MdrGraphicsContext {
     Arc<CpuAccessibleBuffer<[Vertex]>>,
     Arc<CpuAccessibleBuffer<[u32]>>,
     u32,
-    Arc<CpuAccessibleBuffer<ObjectUniformData>>,
+    Arc<CpuAccessibleBuffer<MaterialUniformData>>,
+    Arc<CpuAccessibleBuffer<ObjectPushConstants>>,
   ) {
     let vertex_buffer = CpuAccessibleBuffer::from_iter(
       logical_device.clone(),
@@ -364,18 +399,26 @@ impl MdrGraphicsContext {
     )
     .unwrap();
 
-    let transform_buffer = CpuAccessibleBuffer::from_data(
+    let material_buffer = CpuAccessibleBuffer::from_data(
       logical_device.clone(),
       BufferUsage::uniform_buffer(),
       false,
-      ObjectUniformData {
+      MaterialUniformData {
         diffuse_color: object.material.diffuse_color.into(),
         alpha: object.material.alpha,
 
         specular_color: object.material.specular_color.into(),
         shininess: object.material.shininess,
+      },
+    )
+    .unwrap();
 
-        transformation_matrix: object.transform.to_matrix().into(),
+    let push_constants_buffer = CpuAccessibleBuffer::from_data(
+      logical_device.clone(),
+      BufferUsage::uniform_buffer(),
+      false,
+      ObjectPushConstants {
+        transformation_matrix: object.transform.matrix().into(),
       },
     )
     .unwrap();
@@ -384,27 +427,25 @@ impl MdrGraphicsContext {
       vertex_buffer,
       index_buffer,
       object.mesh.indices.len() as u32,
-      transform_buffer,
+      material_buffer,
+      push_constants_buffer,
     )
   }
 
   fn upload_camera_buffer(
     logical_device: &Arc<Device>,
     camera: &MdrCamera,
-    aspect_ratio: f32,
   ) -> Arc<CpuAccessibleBuffer<CameraUniformData>> {
-    let (view, proj) = camera.get_view_proj(aspect_ratio);
-    let pos = camera.get_scene_position();
+    let view_matrix = camera.get_view_matrix();
+    let projection_matrix = camera.get_projection_matrix();
 
     CpuAccessibleBuffer::from_data(
       logical_device.clone(),
       BufferUsage::uniform_buffer(),
       false,
       CameraUniformData {
-        camera_pos: [pos.x, pos.y, pos.z],
-        _dummy0: [0, 0, 0, 0],
-        view: view.into(),
-        proj: proj.into(),
+        view: view_matrix.into(),
+        proj: projection_matrix.into(),
       },
     )
     .unwrap()

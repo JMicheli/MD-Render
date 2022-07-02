@@ -9,26 +9,23 @@ pub struct MdrTransform {
 }
 
 impl MdrTransform {
-  pub fn get_matrix_and_inverse(&self) -> (Matrix4<f32>, Matrix4<f32>) {
-    // Translation homogenous matrices
+  pub fn matrix(&self) -> Matrix4<f32> {
     let trans = self.translation.to_homogeneous();
-    let trans_inv = self.translation.inverse().to_homogeneous();
-    // Rotation homogenous matrices
     let rot = self.rotation.to_homogeneous();
-    let rot_inv = self.rotation.inverse().to_homogeneous();
-    // Scale homogenous matrices
     let scale = self.scale.to_homogeneous();
+
+    trans * rot * scale
+  }
+
+  pub fn inverse_matrix(&self) -> Matrix4<f32> {
+    let trans_inv = self.translation.inverse().to_homogeneous();
+    let rot_inv = self.rotation.inverse().to_homogeneous();
     let scale_inv = self.scale.try_inverse().unwrap().to_homogeneous();
 
-    let transform_matrix = trans * rot * scale;
-    let inverse_transform_matrix = scale_inv * rot_inv * trans_inv;
-
-    (transform_matrix, inverse_transform_matrix)
+    scale_inv * rot_inv * trans_inv
   }
-}
 
-impl Default for MdrTransform {
-  fn default() -> Self {
+  pub fn identity() -> Self {
     Self {
       translation: Translation3::identity(),
       rotation: Rotation3::identity(),
@@ -47,7 +44,7 @@ impl MdrSceneObject {
   pub fn new(mesh: MdrMesh) -> Self {
     Self {
       mesh,
-      transform: MdrTransform::default(),
+      transform: MdrTransform::identity(),
       material: MdrMaterial::default(),
     }
   }
@@ -55,7 +52,7 @@ impl MdrSceneObject {
   pub fn empty() -> Self {
     Self {
       mesh: MdrMesh::default(),
-      transform: MdrTransform::default(),
+      transform: MdrTransform::identity(),
       material: MdrMaterial::default(),
     }
   }

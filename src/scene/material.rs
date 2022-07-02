@@ -7,7 +7,7 @@ pub struct MdrMaterial {
 }
 
 impl MdrMaterial {
-  pub const fn red() -> Self {
+  pub fn red() -> Self {
     Self {
       diffuse_color: Color::new(0.8, 0.0, 0.0),
       alpha: 1.0,
@@ -16,7 +16,7 @@ impl MdrMaterial {
     }
   }
 
-  pub const fn green() -> Self {
+  pub fn green() -> Self {
     Self {
       diffuse_color: Color::new(0.0, 0.8, 0.0),
       alpha: 1.0,
@@ -25,7 +25,7 @@ impl MdrMaterial {
     }
   }
 
-  pub const fn blue() -> Self {
+  pub fn blue() -> Self {
     Self {
       diffuse_color: Color::new(0.0, 0.0, 0.8),
       alpha: 1.0,
@@ -34,7 +34,7 @@ impl MdrMaterial {
     }
   }
 
-  pub const fn grey() -> Self {
+  pub fn grey() -> Self {
     Self {
       diffuse_color: Color::new(0.3, 0.3, 0.3),
       alpha: 1.0,
@@ -55,6 +55,7 @@ impl Default for MdrMaterial {
   }
 }
 
+#[derive(Copy, Clone)]
 pub struct Color {
   pub r: f32,
   pub g: f32,
@@ -104,5 +105,11 @@ impl Color {
       g: 0.0,
       b: 0.0,
     }
+  }
+}
+
+impl From<Color> for [f32; 3] {
+  fn from(color: Color) -> Self {
+    [color.r, color.g, color.b]
   }
 }
