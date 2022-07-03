@@ -1,7 +1,7 @@
 use std::{env, path::Path};
 
-use cgmath::Vector3;
 use log::info;
+use nalgebra::Vector3;
 
 use mdr_engine::{logger, MdrEngine, MdrEngineOptions, MdrMaterial, MdrSceneObject};
 
@@ -41,21 +41,23 @@ fn main() {
 
   // Suzanne
   let mut monkey = MdrSceneObject::from_obj(asset("detailed_suzanne.obj").as_str());
+  monkey.transform.translation.vector = Vector3::new(0.0, 0.0, -2.0);
   monkey.material = MdrMaterial::red();
   engine.scene.add_object(monkey);
   // Sphere
   let mut sphere = MdrSceneObject::from_obj(asset("sphere.obj").as_str());
-  sphere.transform.pos = Vector3::new(2.0, -2.0, -1.0);
+  sphere.transform.translation.vector = Vector3::new(2.0, -2.0, -3.0);
   sphere.material = MdrMaterial::green();
   engine.scene.add_object(sphere);
   // Ground plane
   let mut ground_plane = MdrSceneObject::from_obj(asset("plane.obj").as_str());
-  ground_plane.transform.pos = Vector3::new(0.0, 1.0, 0.0);
+  ground_plane.transform.translation.vector = Vector3::new(0.0, 1.0, 0.0);
   ground_plane.material = MdrMaterial::grey();
   engine.scene.add_object(ground_plane);
 
   // Set camera orientation
-  engine.scene.camera.theta = 90.0;
+  //engine.scene.camera.theta = 90.0;
+  // TODO Remove
 
   // Start event loop
   info!("Starting event loop");

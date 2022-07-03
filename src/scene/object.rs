@@ -1,6 +1,6 @@
 use nalgebra::{Matrix4, Rotation3, Scale3, Translation3};
 
-use super::{material::MdrMaterial, MdrMesh, Vertex};
+use super::{material::MdrMaterial, MdrMesh};
 
 pub struct MdrTransform {
   pub translation: Translation3<f32>,

@@ -315,7 +315,7 @@ impl MdrGraphicsContext {
 
     // Render objects
     for object in scene.scene_objects.iter() {
-      let (vertex_buffer, index_buffer, index_count, material_buffer, push_buffer) =
+      let (vertex_buffer, index_buffer, index_count, material_buffer, push_constants) =
         Self::upload_scene_object(&logical_device, object);
 
       // Bind vertex data
@@ -344,21 +344,10 @@ impl MdrGraphicsContext {
       );
 
       // Push constants for object transform
-      let push_descriptor_set = PersistentDescriptorSet::new(
-        pipeline
-          .graphics_pipeline
-          .layout()
-          .set_layouts()
-          .get(0)
-          .unwrap()
-          .clone(),
-        [WriteDescriptorSet::buffer(0, push_buffer)],
-      )
-      .unwrap();
       builder.push_constants(
         pipeline.graphics_pipeline.layout().clone(),
         0,
-        push_descriptor_set,
+        push_constants,
       );
 
       // Draw call
@@ -381,7 +370,7 @@ impl MdrGraphicsContext {
     Arc<CpuAccessibleBuffer<[u32]>>,
     u32,
     Arc<CpuAccessibleBuffer<MaterialUniformData>>,
-    Arc<CpuAccessibleBuffer<ObjectPushConstants>>,
+    ObjectPushConstants,
   ) {
     let vertex_buffer = CpuAccessibleBuffer::from_iter(
       logical_device.clone(),
@@ -413,22 +402,16 @@ impl MdrGraphicsContext {
     )
     .unwrap();
 
-    let push_constants_buffer = CpuAccessibleBuffer::from_data(
-      logical_device.clone(),
-      BufferUsage::uniform_buffer(),
-      false,
-      ObjectPushConstants {
-        transformation_matrix: object.transform.matrix().into(),
-      },
-    )
-    .unwrap();
+    let push_constants = ObjectPushConstants {
+      transformation_matrix: object.transform.matrix().into(),
+    };
 
     (
       vertex_buffer,
       index_buffer,
       object.mesh.indices.len() as u32,
       material_buffer,
-      push_constants_buffer,
+      push_constants,
     )
   }
 
