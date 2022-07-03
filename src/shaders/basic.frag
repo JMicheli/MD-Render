@@ -2,7 +2,6 @@
 
 layout(location = 0) in vec4 v_position;
 layout(location = 1) in vec3 v_normal;
-layout(location = 2) in vec4 v_color;
 
 layout(location = 0) out vec4 f_color;
 
@@ -20,6 +19,18 @@ const PositionalLight LIGHT = PositionalLight(
   vec3(2.0, -2.0, 2.0)
 );
 
+layout(set = 0, binding = 0) uniform CameraUniformData {
+  mat4 view;
+  mat4 proj;
+} camera;
+
+layout(set = 1, binding = 0) uniform MaterialUniformData {
+  vec3 diffuse_color;
+  float alpha;
+
+  vec3 specular_color;
+  float shininess;
+} material;
 
 void main() {
   // L - Direction from fragment position to light
@@ -41,7 +52,8 @@ void main() {
 
 
   float brightness = dot(N, L);
-  vec4 dark_color = v_color * vec4(0.6, 0.6, 0.6, 1.0);
+  vec4 light_color = vec4(material.diffuse_color, material.alpha);
+  vec4 dark_color = light_color * vec4(0.6, 0.6, 0.6, 1.0);
   
-  f_color = mix(dark_color, v_color, brightness);
+  f_color = mix(dark_color, light_color, brightness);
 }

@@ -6,10 +6,9 @@ use log::{debug, error};
 pub struct Vertex {
   pub position: [f32; 3],
   pub normal: [f32; 3],
-  pub color: [f32; 4],
 }
 
-vulkano::impl_vertex!(Vertex, position, normal, color);
+vulkano::impl_vertex!(Vertex, position, normal);
 
 #[derive(Default)]
 pub struct MdrMesh {
@@ -47,7 +46,6 @@ impl MdrMesh {
       vertices.push(Vertex {
         position: [positions[index], positions[index + 1], positions[index + 2]],
         normal: [normals[index], normals[index + 1], normals[index + 2]],
-        color: [0.8, 0.0, 0.0, 1.0],
       });
     }
 

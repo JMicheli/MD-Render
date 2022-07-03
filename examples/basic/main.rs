@@ -55,10 +55,6 @@ fn main() {
   ground_plane.material = MdrMaterial::grey();
   engine.scene.add_object(ground_plane);
 
-  // Set camera orientation
-  //engine.scene.camera.theta = 90.0;
-  // TODO Remove
-
   // Start event loop
   info!("Starting event loop");
   event_loop.run(
