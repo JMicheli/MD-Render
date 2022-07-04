@@ -26,6 +26,7 @@ layout(push_constant) uniform ObjectPushConstants
 
 
 void main() {
+  // TODO fix to use transpose inverse
   v_normal = normalize(mat3(camera.view) * normal);
   v_position =  object.transformation_matrix * vec4(position, 1.0);
   gl_Position = camera.proj * camera.view * v_position;
