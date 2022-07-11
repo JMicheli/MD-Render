@@ -295,7 +295,7 @@ impl MdrGraphicsContext {
     builder.bind_pipeline_graphics(pipeline.graphics_pipeline.clone());
 
     // Upload camera transforms
-    let camera_buffer = Self::upload_camera_buffer(&logical_device, &scene.camera);
+    let camera_buffer = Self::upload_camera_buffer(logical_device, &scene.camera);
     let camera_descriptor_set = PersistentDescriptorSet::new(
       pipeline
         .graphics_pipeline

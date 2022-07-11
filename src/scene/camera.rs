@@ -1,6 +1,6 @@
 use nalgebra::{Matrix4, Perspective3};
 
-use crate::MdrTransform;
+use super::transform::MdrTransform;
 
 // TODO Reimplement as trait and split out ortho/perspective cameras
 pub struct MdrCamera {
@@ -14,8 +14,8 @@ pub struct MdrCamera {
 
 impl MdrCamera {
   pub fn get_view_matrix(&self) -> Matrix4<f32> {
-    let translation_matrix = self.transform.translation.to_homogeneous();
-    let rotation_matrix = self.transform.rotation.to_homogeneous();
+    let translation_matrix = self.transform.translation.matrix();
+    let rotation_matrix = self.transform.rotation.matrix();
 
     rotation_matrix * translation_matrix
   }

@@ -7,4 +7,5 @@ mod update;
 
 pub mod logger;
 pub use engine::{MdrEngine, MdrEngineOptions};
-pub use scene::{MdrMaterial, MdrSceneObject, MdrTransform};
+pub use scene::transform;
+pub use scene::{MdrMaterial, MdrSceneObject};
