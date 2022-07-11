@@ -1,12 +1,14 @@
 #version 450
 
-layout(location = 0) in vec3 position;
-layout(location = 1) in vec3 normal;
+layout(location = 0) in vec3 a_position;
+layout(location = 1) in vec3 a_normal;
 
-layout(location = 0) out vec4 v_position;
+layout(location = 0) out vec3 v_position;
 layout(location = 1) out vec3 v_normal;
 
 layout(set = 0, binding = 0) uniform CameraUniformData {
+  vec3 position;
+
   mat4 view;
   mat4 proj;
 } camera;
@@ -26,8 +28,11 @@ layout(push_constant) uniform ObjectPushConstants
 
 
 void main() {
+  vec4 world_position =  object.transformation_matrix * vec4(a_position, 1.0);
+
   // TODO fix to use transpose inverse
-  v_normal = normalize(mat3(camera.view) * normal);
-  v_position =  object.transformation_matrix * vec4(position, 1.0);
-  gl_Position = camera.proj * camera.view * v_position;
+  v_normal = normalize(mat3(camera.view) * a_normal);
+  
+  v_position = world_position.xyz;
+  gl_Position = camera.proj * camera.view * world_position;
 }

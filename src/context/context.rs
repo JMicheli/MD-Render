@@ -1,4 +1,5 @@
 use log::{debug, error, info, trace};
+use nalgebra::{Vector3, Vector4};
 use std::sync::Arc;
 use winit::{event_loop::EventLoop, window::Window};
 
@@ -422,11 +423,21 @@ impl MdrGraphicsContext {
     let view_matrix = camera.get_view_matrix();
     let projection_matrix = camera.get_projection_matrix();
 
+    let view_transform_column = view_matrix.column(3);
+    let position_vector = Vector3::new(
+      view_transform_column.x,
+      view_transform_column.y,
+      view_transform_column.z,
+    );
+
     CpuAccessibleBuffer::from_data(
       logical_device.clone(),
       BufferUsage::uniform_buffer(),
       false,
       CameraUniformData {
+        position: position_vector.into(),
+        _dummy0: [0, 0, 0, 0],
+
         view: view_matrix.into(),
         proj: projection_matrix.into(),
       },

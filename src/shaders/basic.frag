@@ -1,30 +1,17 @@
 #version 450
 
-layout(location = 0) in vec4 v_position;
+// Inputs/Ouputs
+////////////////
+layout(location = 0) in vec3 v_position;
 layout(location = 1) in vec3 v_normal;
 
 layout(location = 0) out vec4 f_color;
 
-// Create a light for testing
-// TODO Externalize
-struct PositionalLight {
-  vec3 diffuse_color;
-  vec3 specular_color;
-  vec3 position;
-};
-const vec3 AMBIENT_LIGHT = vec3(1.0, 1.0, 1.0);
-const PositionalLight LIGHT = PositionalLight(
-  vec3(1.0, 1.0, 1.0),
-  vec3(1.0, 1.0, 1.0),
-  vec3(2.0, -2.0, 2.0)
-);
-// Test constants not included in material
-// TODO Externalize?
-const float AMBIENT_REFLECTANCE = 0.2;
-const float DIFFUSE_REFLECTANCE = 0.6;
-const float SPECULAR_REFLECTANCE = 0.2;
-
+// Uniform buffer objects
+/////////////////////////
 layout(set = 0, binding = 0) uniform CameraUniformData {
+  vec3 position;
+
   mat4 view;
   mat4 proj;
 } camera;
@@ -37,27 +24,32 @@ layout(set = 1, binding = 0) uniform MaterialUniformData {
   float shininess;
 } material;
 
+///////////////////////
+//TODO Remove test code
+///////////////////////
+
+const vec3 light_position = vec3(1.0, 3.0, 3.0);
+const vec3 light_color = vec3(1.0);
+
+const float ambient_strength = 0.1;
+const float specular_strength = 0.5;
+
+// Shader Entry Point
+/////////////////////
 void main() {
-  // Camera position can be obtained from view matrix
-  vec3 camera_position = -camera.view[3].xyz;
-
-  // L - Direction from fragment position to light
-  vec3 L = normalize(LIGHT.position - v_position.xyz);
-  // N - (Normalized) fragment normal
   vec3 N = normalize(v_normal);
-  // V - Direction from fragment position to camera
-  vec3 V = normalize(camera_position - v_normal.xyz);
-  // R - Direction of a ray reflected off the surface
-  vec3 R = normalize(reflect(-L, N));
+  vec3 L = normalize(light_position - v_position);
+  vec3 V = normalize(camera.position - v_position);
+  vec3 R = reflect(-L, N);
 
-  // Phong reflection model
-  // Ambient contribution from lights
-  vec3 ambient = AMBIENT_REFLECTANCE * AMBIENT_LIGHT;
-  // Diffuse contribution
-  vec3 diffuse = DIFFUSE_REFLECTANCE * dot(L, N) * material.diffuse_color;
-  // Specular contribution
-  vec3 specular = SPECULAR_REFLECTANCE * pow(dot(R, V), material.shininess) * material.specular_color;
-  vec3 phong_illumination = ambient + diffuse + specular;
+  vec3 ambient = ambient_strength * light_color;
+  
+  float diffusion_coefficient = max(dot(N, L), 0.0);
+  vec3 diffuse = diffusion_coefficient * light_color;
 
-  f_color = vec4(phong_illumination, material.alpha);
+  float specular_coefficient = pow(max(dot(V, R), 0.0), material.shininess);
+  vec3 specular = specular_strength * specular_coefficient * light_color;
+
+  vec3 result = (ambient + diffuse + specular) * material.diffuse_color;
+  f_color = vec4(result, material.alpha);
 }
