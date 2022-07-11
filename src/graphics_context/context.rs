@@ -1,5 +1,5 @@
 use log::{debug, error, info, trace};
-use nalgebra::{Vector3, Vector4};
+use nalgebra::Vector3;
 use std::sync::Arc;
 use winit::{event_loop::EventLoop, window::Window};
 
@@ -25,7 +25,7 @@ use vulkano::{
 };
 
 use crate::{
-  context::{
+  graphics_context::{
     pipeline::MdrPipeline,
     window::{MdrWindow, MdrWindowOptions},
   },
@@ -74,7 +74,7 @@ impl MdrGraphicsContext {
       resizable: true,
       title: "MD Renderer",
     };
-    let window = MdrWindow::new(&instance, &event_loop, window_options);
+    let window = MdrWindow::new(&instance, event_loop, window_options);
     debug!("Created window");
 
     // Select physical device and queue
@@ -317,7 +317,7 @@ impl MdrGraphicsContext {
     // Render objects
     for object in scene.scene_objects.iter() {
       let (vertex_buffer, index_buffer, index_count, material_buffer, push_constants) =
-        Self::upload_scene_object(&logical_device, object);
+        Self::upload_scene_object(logical_device, object);
 
       // Bind vertex data
       builder
@@ -519,7 +519,7 @@ impl MdrGraphicsContext {
       ..DeviceExtensions::none()
     };
 
-    let device_creation_results = PhysicalDevice::enumerate(&instance)
+    let device_creation_results = PhysicalDevice::enumerate(instance)
       .filter(|&p| p.supported_extensions().is_superset_of(&device_extensions))
       .filter_map(|p| {
         p.queue_families()

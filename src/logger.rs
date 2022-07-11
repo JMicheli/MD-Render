@@ -44,5 +44,7 @@ pub fn init_from_env() -> Result<(), SetLoggerError> {
 }
 
 fn get_env_var(name: &str, default: &str) -> String {
-  env::var(name).unwrap_or(default.to_string()).to_lowercase()
+  env::var(name)
+    .unwrap_or_else(|_| default.to_string())
+    .to_lowercase()
 }

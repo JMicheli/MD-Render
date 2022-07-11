@@ -40,7 +40,7 @@ fn main() {
   let (mut engine, event_loop) = MdrEngine::new(opts);
 
   // Suzanne
-  let mut monkey = MdrSceneObject::from_obj(asset("detailed_suzanne.obj").as_str());
+  let mut monkey = MdrSceneObject::from_obj(asset("suzanne.obj").as_str());
   monkey.transform.translation.vector = Vector3::new(0.0, 0.0, -2.0);
   monkey.material = MdrMaterial::red();
   engine.scene.add_object(monkey);

@@ -5,7 +5,8 @@ use winit::{
 };
 
 use crate::{
-  context::MdrGraphicsContext, input::MdrInputContext, scene::MdrScene, update::MdrUpdateContext,
+  graphics_context::MdrGraphicsContext, input::MdrInputContext, scene::MdrScene,
+  update::MdrUpdateContext,
 };
 
 pub struct MdrEngineOptions {
