@@ -39,17 +39,22 @@ fn main() {
   let (mut engine, event_loop) = MdrEngine::new(opts);
 
   // Suzanne
-  let mut monkey = MdrSceneObject::from_obj(asset("suzanne.obj").as_str());
+  let mut monkey = MdrSceneObject::from_obj(asset("meshes/suzanne.obj").as_str());
   monkey.transform.translation.set(0.0, 0.0, -2.0);
   monkey.material = MdrMaterial::red();
   engine.scene.add_object(monkey);
   // Sphere
-  let mut sphere = MdrSceneObject::from_obj(asset("sphere.obj").as_str());
+  let mut sphere = MdrSceneObject::from_obj(asset("meshes/sphere.obj").as_str());
   sphere.transform.translation.set(2.0, -2.0, -3.0);
   sphere.material = MdrMaterial::green();
   engine.scene.add_object(sphere);
+  // Cube
+  let mut cube = MdrSceneObject::from_obj(asset("meshes/cube.obj").as_str());
+  cube.transform.translation.set(-2.0, -2.0, -3.0);
+  cube.material = MdrMaterial::blue();
+  engine.scene.add_object(cube);
   // Ground plane
-  let mut ground_plane = MdrSceneObject::from_obj(asset("plane.obj").as_str());
+  let mut ground_plane = MdrSceneObject::from_obj(asset("meshes/plane.obj").as_str());
   ground_plane.transform.translation.set(0.0, 1.0, 0.0);
   ground_plane.material = MdrMaterial::grey();
   engine.scene.add_object(ground_plane);
