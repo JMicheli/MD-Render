@@ -2,10 +2,9 @@ use std::time::Instant;
 
 use crate::{input::MdrInputState, scene::MdrScene};
 
-const CAMERA_MOV_SPEED: f32 = 0.5;
-const CAMERA_ROT_SPEED: f32 = 2.5;
-
 pub struct MdrUpdateContext {
+  update_function: Box<dyn FnMut(&mut MdrScene, &MdrInputState, f32) -> ()>,
+
   last_instant: Instant,
 }
 
@@ -13,39 +12,29 @@ impl MdrUpdateContext {
   pub fn new() -> Self {
     Self {
       last_instant: Instant::now(),
+      update_function: Box::new(|_, _, _| {}),
     }
   }
 
-  // TODO Externalize
-  pub fn update_scene(&mut self, scene: &mut MdrScene, input_state: &MdrInputState) {
+  /// Set the update function to use each frame, the function should be in the form
+  /// of a closure which provides the following references:
+  ///   * `&mut MdrScene` - A mutable reference to the scene being updated
+  ///   * `&MdrInputState` - A reference to the input state this frame
+  ///   * `f32` - the time delta since last frame in seconds
+  pub fn set_update_function(
+    &mut self,
+    f: Box<dyn FnMut(&mut MdrScene, &MdrInputState, f32) -> ()>,
+  ) {
+    self.update_function = f;
+  }
+
+  /// Calculates time since last frame and performs updates to the scene according to the
+  /// user function set with `set_update_function()`.
+  pub(crate) fn update_scene(&mut self, scene: &mut MdrScene, input_state: &MdrInputState) {
     let current_instant = Instant::now();
     let dt = (current_instant - self.last_instant).as_secs_f32();
 
-    if input_state.w {
-      scene.camera.transform.translation.z += dt * CAMERA_MOV_SPEED;
-    }
-    if input_state.a {
-      scene.camera.transform.translation.x += dt * CAMERA_MOV_SPEED;
-    }
-    if input_state.d {
-      scene.camera.transform.translation.x += dt * -CAMERA_MOV_SPEED;
-    }
-    if input_state.s {
-      scene.camera.transform.translation.z += dt * -CAMERA_MOV_SPEED;
-    }
-
-    if input_state.up {
-      scene.camera.transform.rotation.x += dt * CAMERA_ROT_SPEED;
-    }
-    if input_state.down {
-      scene.camera.transform.rotation.x += dt * -CAMERA_ROT_SPEED;
-    }
-    if input_state.right {
-      scene.camera.transform.rotation.z += dt * CAMERA_ROT_SPEED;
-    }
-    if input_state.left {
-      scene.camera.transform.rotation.z += dt * -CAMERA_ROT_SPEED;
-    }
+    (self.update_function)(scene, input_state, dt);
 
     self.last_instant = current_instant;
   }

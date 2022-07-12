@@ -5,7 +5,9 @@ use winit::{
 };
 
 use crate::{
-  graphics_context::MdrGraphicsContext, input::MdrInputContext, scene::MdrScene,
+  graphics_context::MdrGraphicsContext,
+  input::{MdrInputContext, MdrInputState},
+  scene::MdrScene,
   update::MdrUpdateContext,
 };
 
@@ -34,6 +36,13 @@ impl MdrEngine {
     };
 
     (engine, event_loop)
+  }
+
+  pub fn set_update_function(
+    &mut self,
+    f: Box<dyn FnMut(&mut MdrScene, &MdrInputState, f32) -> ()>,
+  ) {
+    self.update_context.set_update_function(f);
   }
 
   pub fn handle_event(&mut self, event: Event<()>) -> Option<ControlFlow> {

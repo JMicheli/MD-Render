@@ -4,6 +4,10 @@ use log::info;
 
 use mdr_engine::{logger, MdrEngine, MdrEngineOptions, MdrMaterial, MdrSceneObject};
 
+// Consts for this example
+const CAMERA_MOV_SPEED: f32 = 0.5;
+const CAMERA_ROT_SPEED: f32 = 2.5;
+
 // Build debug configuration
 #[cfg(debug_assertions)]
 const MDR_LOG_LEVEL: &str = "debug";
@@ -58,6 +62,35 @@ fn main() {
   ground_plane.transform.translation.set(0.0, 1.0, 0.0);
   ground_plane.material = MdrMaterial::grey();
   engine.scene.add_object(ground_plane);
+
+  // Set update function
+  engine.set_update_function(Box::new(|scene, input_state, dt| {
+    if input_state.w {
+      scene.camera.transform.translation.z += dt * CAMERA_MOV_SPEED;
+    }
+    if input_state.a {
+      scene.camera.transform.translation.x += dt * CAMERA_MOV_SPEED;
+    }
+    if input_state.d {
+      scene.camera.transform.translation.x += dt * -CAMERA_MOV_SPEED;
+    }
+    if input_state.s {
+      scene.camera.transform.translation.z += dt * -CAMERA_MOV_SPEED;
+    }
+
+    if input_state.up {
+      scene.camera.transform.rotation.x += dt * CAMERA_ROT_SPEED;
+    }
+    if input_state.down {
+      scene.camera.transform.rotation.x += dt * -CAMERA_ROT_SPEED;
+    }
+    if input_state.right {
+      scene.camera.transform.rotation.z += dt * CAMERA_ROT_SPEED;
+    }
+    if input_state.left {
+      scene.camera.transform.rotation.z += dt * -CAMERA_ROT_SPEED;
+    }
+  }));
 
   // Start event loop
   info!("Starting event loop");
