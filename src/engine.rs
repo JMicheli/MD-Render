@@ -36,6 +36,10 @@ impl MdrEngine {
     (engine, event_loop)
   }
 
+  pub fn initialize_scene(&mut self) {
+    self.graphics_context.load_scene(&mut self.scene);
+  }
+
   pub fn handle_event(&mut self, event: Event<()>) -> Option<ControlFlow> {
     match event {
       Event::WindowEvent {

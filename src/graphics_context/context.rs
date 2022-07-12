@@ -1,6 +1,6 @@
 use log::{debug, error, info, trace};
 use nalgebra::Vector3;
-use std::sync::Arc;
+use std::{fmt::Write, sync::Arc};
 use winit::{event_loop::EventLoop, window::Window};
 
 use vulkano::{
@@ -19,6 +19,7 @@ use vulkano::{
   instance::{Instance, InstanceCreateInfo, InstanceExtensions},
   pipeline::{graphics::viewport::Viewport, Pipeline, PipelineBindPoint},
   render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass},
+  sampler::{Filter, Sampler, SamplerAddressMode, SamplerCreateInfo},
   shader::ShaderModule,
   swapchain::{self, AcquireError, Surface, Swapchain, SwapchainCreateInfo},
   sync::{self, FlushError, GpuFuture},
@@ -141,6 +142,39 @@ impl MdrGraphicsContext {
       vs,
       fs,
     }
+  }
+
+  // TODO This needs to go somewhere... maybe?
+  pub fn load_scene(&mut self, scene: &mut MdrScene) {
+    let mut previous_frame_end = match self.frame_futures[self.previous_frame_index].take() {
+      Some(value) => value,
+      None => sync::now(self.logical_device.clone()).boxed(),
+    };
+
+    for object in scene.scene_objects.iter_mut() {
+      if !object.material.diffuse_map.has_image_view {
+        // Create sampler
+        let sampler = Sampler::new(
+          self.logical_device.clone(),
+          SamplerCreateInfo {
+            mag_filter: Filter::Linear,
+            min_filter: Filter::Linear,
+            address_mode: [SamplerAddressMode::Repeat; 3],
+            ..Default::default()
+          },
+        )
+        .unwrap();
+        // Upload
+        let texture_upload_future = object
+          .material
+          .diffuse_map
+          .upload_to_gpu(&self.queue, sampler);
+
+        previous_frame_end = previous_frame_end.join(texture_upload_future).boxed();
+      }
+    }
+
+    self.frame_futures[self.previous_frame_index] = Some(previous_frame_end);
   }
 
   pub fn draw(&mut self, scene: &MdrScene) {
@@ -334,7 +368,26 @@ impl MdrGraphicsContext {
           .get(1)
           .unwrap()
           .clone(),
-        [WriteDescriptorSet::buffer(0, material_buffer)],
+        [
+          WriteDescriptorSet::buffer(0, material_buffer),
+          WriteDescriptorSet::image_view_sampler(
+            1,
+            object
+              .material
+              .diffuse_map
+              .image_view
+              .as_ref()
+              .unwrap()
+              .clone(),
+            object
+              .material
+              .diffuse_map
+              .sampler
+              .as_ref()
+              .unwrap()
+              .clone(),
+          ),
+        ],
       )
       .unwrap();
       builder.bind_descriptor_sets(
@@ -394,10 +447,6 @@ impl MdrGraphicsContext {
       BufferUsage::uniform_buffer(),
       false,
       MaterialUniformData {
-        diffuse_color: object.material.diffuse_color.into(),
-        alpha: object.material.alpha,
-
-        specular_color: object.material.specular_color.into(),
         shininess: object.material.shininess,
       },
     )

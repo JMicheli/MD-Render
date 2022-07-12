@@ -2,9 +2,11 @@
 
 layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec3 a_normal;
+layout(location = 2) in vec2 a_tex_coord;
 
 layout(location = 0) out vec3 v_position;
 layout(location = 1) out vec3 v_normal;
+layout(location = 2) out vec2 v_uv;
 
 layout(set = 0, binding = 0) uniform CameraUniformData {
   vec3 position;
@@ -14,12 +16,9 @@ layout(set = 0, binding = 0) uniform CameraUniformData {
 } camera;
 
 layout(set = 1, binding = 0) uniform MaterialUniformData {
-  vec3 diffuse_color;
-  float alpha;
-
-  vec3 specular_color;
   float shininess;
 } material;
+layout(set = 1, binding = 1) uniform sampler2D albedo;
 
 layout(push_constant) uniform ObjectPushConstants
 {
@@ -35,4 +34,6 @@ void main() {
   
   v_position = world_position.xyz;
   gl_Position = camera.proj * camera.view * world_position;
+
+  v_uv = a_tex_coord;
 }

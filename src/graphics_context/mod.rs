@@ -1,4 +1,5 @@
 mod context;
+pub mod image;
 mod pipeline;
 mod window;
 

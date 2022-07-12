@@ -2,7 +2,10 @@ use std::{env, path::Path};
 
 use log::info;
 
-use mdr_engine::{logger, MdrEngine, MdrEngineOptions, MdrMaterial, MdrSceneObject};
+use mdr_engine::{
+  image::{MdrImage, MdrImageFormat},
+  logger, MdrEngine, MdrEngineOptions, MdrMaterial, MdrSceneObject,
+};
 
 // Build debug configuration
 #[cfg(debug_assertions)]
@@ -51,13 +54,20 @@ fn main() {
   // Cube
   let mut cube = MdrSceneObject::from_obj(asset("meshes/cube.obj").as_str());
   cube.transform.translation.set(-2.0, -2.0, -3.0);
-  cube.material = MdrMaterial::blue();
+  cube.material.diffuse_map = MdrImage::from_file(
+    asset("textures/wall/albedo.png").as_str(),
+    MdrImageFormat::SRGB,
+  );
   engine.scene.add_object(cube);
   // Ground plane
   let mut ground_plane = MdrSceneObject::from_obj(asset("meshes/plane.obj").as_str());
   ground_plane.transform.translation.set(0.0, 1.0, 0.0);
   ground_plane.material = MdrMaterial::grey();
   engine.scene.add_object(ground_plane);
+
+  // Load scene
+  // TODO does this need to move?
+  engine.initialize_scene();
 
   // Start event loop
   info!("Starting event loop");

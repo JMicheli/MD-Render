@@ -1,44 +1,36 @@
-pub struct MdrMaterial {
-  pub diffuse_color: Color,
-  pub alpha: f32,
+use crate::graphics_context::image::MdrImage;
 
-  pub specular_color: Color,
+pub struct MdrMaterial {
+  pub diffuse_map: MdrImage,
+
   pub shininess: f32,
 }
 
 impl MdrMaterial {
   pub fn red() -> Self {
     Self {
-      diffuse_color: Color::new(0.8, 0.0, 0.0),
-      alpha: 1.0,
-      specular_color: Color::white(),
+      diffuse_map: MdrImage::solid_rgba(205, 0, 0, 255),
       shininess: 20.0,
     }
   }
 
   pub fn green() -> Self {
     Self {
-      diffuse_color: Color::new(0.0, 0.8, 0.0),
-      alpha: 1.0,
-      specular_color: Color::white(),
+      diffuse_map: MdrImage::solid_rgba(0, 205, 0, 255),
       shininess: 20.0,
     }
   }
 
   pub fn blue() -> Self {
     Self {
-      diffuse_color: Color::new(0.0, 0.0, 0.8),
-      alpha: 1.0,
-      specular_color: Color::white(),
+      diffuse_map: MdrImage::solid_rgba(0, 0, 205, 255),
       shininess: 20.0,
     }
   }
 
   pub fn grey() -> Self {
     Self {
-      diffuse_color: Color::new(0.3, 0.3, 0.3),
-      alpha: 1.0,
-      specular_color: Color::white(),
+      diffuse_map: MdrImage::solid_rgba(77, 77, 77, 255),
       shininess: 5.0,
     }
   }
@@ -47,69 +39,8 @@ impl MdrMaterial {
 impl Default for MdrMaterial {
   fn default() -> Self {
     Self {
-      diffuse_color: Color::new(0.0, 0.8, 0.0),
-      alpha: 1.0,
-      specular_color: Color::white(),
+      diffuse_map: MdrImage::solid_rgba(255, 0, 255, 255),
       shininess: 20.0,
     }
-  }
-}
-
-#[derive(Copy, Clone)]
-pub struct Color {
-  pub r: f32,
-  pub g: f32,
-  pub b: f32,
-}
-
-impl Color {
-  pub fn new(r: f32, g: f32, b: f32) -> Self {
-    Self { r, g, b }
-  }
-
-  pub const fn white() -> Self {
-    Self {
-      r: 1.0,
-      g: 1.0,
-      b: 1.0,
-    }
-  }
-
-  pub const fn red() -> Self {
-    Self {
-      r: 1.0,
-      g: 0.0,
-      b: 0.0,
-    }
-  }
-
-  pub const fn green() -> Self {
-    Self {
-      r: 0.0,
-      g: 1.0,
-      b: 0.0,
-    }
-  }
-
-  pub const fn blue() -> Self {
-    Self {
-      r: 0.0,
-      g: 0.0,
-      b: 1.0,
-    }
-  }
-
-  pub const fn black() -> Self {
-    Self {
-      r: 0.0,
-      g: 0.0,
-      b: 0.0,
-    }
-  }
-}
-
-impl From<Color> for [f32; 3] {
-  fn from(color: Color) -> Self {
-    [color.r, color.g, color.b]
   }
 }
