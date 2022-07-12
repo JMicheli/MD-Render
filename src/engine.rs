@@ -38,10 +38,7 @@ impl MdrEngine {
     (engine, event_loop)
   }
 
-  pub fn set_update_function(
-    &mut self,
-    f: Box<dyn FnMut(&mut MdrScene, &MdrInputState, f32) -> ()>,
-  ) {
+  pub fn set_update_function(&mut self, f: Box<dyn FnMut(&mut MdrScene, &MdrInputState, f32)>) {
     self.update_context.set_update_function(f);
   }
 

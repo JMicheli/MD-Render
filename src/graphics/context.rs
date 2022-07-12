@@ -27,14 +27,13 @@ use vulkano::{
 use crate::{
   graphics::{
     pipeline::MdrPipeline,
-    resources::MdrVertex,
     shaders::{
       self,
-      basic_vertex_shader::ty::{CameraUniformData, MaterialUniformData, ObjectPushConstants},
+      basic_vertex_shader::ty::{CameraUniformData, ObjectPushConstants},
     },
     window::{MdrWindow, MdrWindowOptions},
   },
-  scene::{MdrCamera, MdrScene, MdrSceneObject},
+  scene::{MdrCamera, MdrScene},
 };
 
 /// A Vulkan graphics context, contains Vulkano members.
@@ -292,7 +291,7 @@ impl MdrGraphicsContext {
       .begin_render_pass(begin_render_pass_info, SubpassContents::Inline)
       .unwrap();
 
-    // Draw
+    // Bind object pipeline
     builder.bind_pipeline_graphics(pipeline.graphics_pipeline.clone());
 
     // Upload camera transforms
@@ -317,13 +316,20 @@ impl MdrGraphicsContext {
 
     // Render objects
     for object in scene.scene_objects.iter() {
-      let (vertex_buffer, index_buffer, index_count, material_buffer, push_constants) =
-        Self::upload_scene_object(logical_device, object);
+      // Upload object's mesh
+      let mesh_buffer = object.mesh.upload_to_gpu(logical_device);
+      // Upload object's material data
+      let material_buffer = object.material.upload_to_gpu(logical_device);
+
+      // Upload object's world transform as a push constant
+      let push_constants = ObjectPushConstants {
+        transformation_matrix: object.transform.matrix().into(),
+      };
 
       // Bind vertex data
       builder
-        .bind_vertex_buffers(0, vertex_buffer.clone())
-        .bind_index_buffer(index_buffer);
+        .bind_vertex_buffers(0, mesh_buffer.vertex_data.clone())
+        .bind_index_buffer(mesh_buffer.index_data.clone());
 
       // Upload material data
       // TODO Order by material and bind once per mat
@@ -335,7 +341,7 @@ impl MdrGraphicsContext {
           .get(1)
           .unwrap()
           .clone(),
-        [WriteDescriptorSet::buffer(0, material_buffer)],
+        [WriteDescriptorSet::buffer(0, material_buffer.material_data)],
       )
       .unwrap();
       builder.bind_descriptor_sets(
@@ -353,7 +359,9 @@ impl MdrGraphicsContext {
       );
 
       // Draw call
-      builder.draw_indexed(index_count, 1, 0, 0, 0).unwrap();
+      builder
+        .draw_indexed(mesh_buffer.index_count, 1, 0, 0, 0)
+        .unwrap();
     }
 
     // End render pass and build
@@ -362,59 +370,6 @@ impl MdrGraphicsContext {
 
     trace!("Created command buffer");
     command_buffer
-  }
-
-  fn upload_scene_object(
-    logical_device: &Arc<Device>,
-    object: &MdrSceneObject,
-  ) -> (
-    Arc<CpuAccessibleBuffer<[MdrVertex]>>,
-    Arc<CpuAccessibleBuffer<[u32]>>,
-    u32,
-    Arc<CpuAccessibleBuffer<MaterialUniformData>>,
-    ObjectPushConstants,
-  ) {
-    let vertex_buffer = CpuAccessibleBuffer::from_iter(
-      logical_device.clone(),
-      BufferUsage::vertex_buffer(),
-      false,
-      object.mesh.vertices.clone(),
-    )
-    .unwrap();
-
-    let index_buffer = CpuAccessibleBuffer::from_iter(
-      logical_device.clone(),
-      BufferUsage::index_buffer(),
-      false,
-      object.mesh.indices.clone(),
-    )
-    .unwrap();
-
-    let material_buffer = CpuAccessibleBuffer::from_data(
-      logical_device.clone(),
-      BufferUsage::uniform_buffer(),
-      false,
-      MaterialUniformData {
-        diffuse_color: object.material.diffuse_color.into(),
-        alpha: object.material.alpha,
-
-        specular_color: object.material.specular_color.into(),
-        shininess: object.material.shininess,
-      },
-    )
-    .unwrap();
-
-    let push_constants = ObjectPushConstants {
-      transformation_matrix: object.transform.matrix().into(),
-    };
-
-    (
-      vertex_buffer,
-      index_buffer,
-      object.mesh.indices.len() as u32,
-      material_buffer,
-      push_constants,
-    )
   }
 
   fn upload_camera_buffer(

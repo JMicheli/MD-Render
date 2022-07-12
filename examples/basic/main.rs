@@ -1,38 +1,17 @@
-use std::{env, path::Path};
+use std::env;
 
 use log::info;
 
 use mdr_engine::resources::MdrMaterial;
 use mdr_engine::{logger, MdrEngine, MdrEngineOptions, MdrSceneObject};
 
+// Some functions and constants extraneous to the example
+mod utils;
+use utils::{asset, DEBUG_ENABLED, MDR_LOG_LEVEL};
+
 // Consts for this example
 const CAMERA_MOV_SPEED: f32 = 0.5;
 const CAMERA_ROT_SPEED: f32 = 2.5;
-
-// Build debug configuration
-#[cfg(debug_assertions)]
-const MDR_LOG_LEVEL: &str = "debug";
-#[cfg(not(debug_assertions))]
-const MDR_LOG_LEVEL: &str = "info";
-#[cfg(debug_assertions)]
-const DEBUG_ENABLED: bool = true;
-#[cfg(not(debug_assertions))]
-const DEBUG_ENABLED: bool = false;
-
-// Asset handling
-#[cfg(debug_assertions)]
-const ASSET_PREFIX: &str = "examples/basic/assets/";
-#[cfg(not(debug_assertions))]
-const ASSET_PREFIX: &str = "assets/";
-
-fn asset(asset_path: &str) -> String {
-  let asset_path_prefix = Path::new(ASSET_PREFIX);
-  asset_path_prefix
-    .join(Path::new(asset_path))
-    .to_str()
-    .unwrap()
-    .to_string()
-}
 
 fn main() {
   env::set_var("MDR_LOG_LEVEL", MDR_LOG_LEVEL);

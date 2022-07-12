@@ -3,7 +3,7 @@ use std::time::Instant;
 use crate::{input::MdrInputState, scene::MdrScene};
 
 pub struct MdrUpdateContext {
-  update_function: Box<dyn FnMut(&mut MdrScene, &MdrInputState, f32) -> ()>,
+  update_function: Box<dyn FnMut(&mut MdrScene, &MdrInputState, f32)>,
 
   last_instant: Instant,
 }
@@ -21,10 +21,7 @@ impl MdrUpdateContext {
   ///   * `&mut MdrScene` - A mutable reference to the scene being updated.
   ///   * `&MdrInputState` - A reference to the input state this frame.
   ///   * `f32` - the time delta since last frame in seconds.
-  pub fn set_update_function(
-    &mut self,
-    f: Box<dyn FnMut(&mut MdrScene, &MdrInputState, f32) -> ()>,
-  ) {
+  pub fn set_update_function(&mut self, f: Box<dyn FnMut(&mut MdrScene, &MdrInputState, f32)>) {
     self.update_function = f;
   }
 

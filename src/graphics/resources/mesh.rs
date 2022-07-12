@@ -1,4 +1,10 @@
+use std::sync::Arc;
+
 use log::{debug, error};
+use vulkano::{
+  buffer::{BufferUsage, CpuAccessibleBuffer},
+  device::Device,
+};
 
 use super::MdrVertex;
 
@@ -47,4 +53,36 @@ impl MdrMesh {
       indices: indices.clone(),
     }
   }
+
+  pub fn upload_to_gpu(&self, logical_device: &Arc<Device>) -> MdrMeshBuffer {
+    let vertex_data = CpuAccessibleBuffer::from_iter(
+      logical_device.clone(),
+      BufferUsage::vertex_buffer(),
+      false,
+      self.vertices.clone(),
+    )
+    .unwrap();
+
+    let index_data = CpuAccessibleBuffer::from_iter(
+      logical_device.clone(),
+      BufferUsage::index_buffer(),
+      false,
+      self.indices.clone(),
+    )
+    .unwrap();
+
+    let index_count = self.indices.len() as u32;
+
+    MdrMeshBuffer {
+      vertex_data,
+      index_data,
+      index_count,
+    }
+  }
+}
+
+pub struct MdrMeshBuffer {
+  pub vertex_data: Arc<CpuAccessibleBuffer<[MdrVertex]>>,
+  pub index_data: Arc<CpuAccessibleBuffer<[u32]>>,
+  pub index_count: u32,
 }

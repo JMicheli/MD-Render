@@ -1,3 +1,12 @@
+use std::sync::Arc;
+
+use vulkano::{
+  buffer::{BufferUsage, CpuAccessibleBuffer},
+  device::Device,
+};
+
+use crate::graphics::shaders::basic_vertex_shader::ty::MaterialUniformData;
+
 pub struct MdrMaterial {
   pub diffuse_color: Color,
   pub alpha: f32,
@@ -7,6 +16,24 @@ pub struct MdrMaterial {
 }
 
 impl MdrMaterial {
+  pub fn upload_to_gpu(&self, logical_device: &Arc<Device>) -> MdrMaterialBuffer {
+    let material_data = CpuAccessibleBuffer::from_data(
+      logical_device.clone(),
+      BufferUsage::uniform_buffer(),
+      false,
+      MaterialUniformData {
+        diffuse_color: self.diffuse_color.into(),
+        alpha: self.alpha,
+
+        specular_color: self.specular_color.into(),
+        shininess: self.shininess,
+      },
+    )
+    .unwrap();
+
+    MdrMaterialBuffer { material_data }
+  }
+
   pub fn red() -> Self {
     Self {
       diffuse_color: Color::new(0.8, 0.0, 0.0),
@@ -112,4 +139,8 @@ impl From<Color> for [f32; 3] {
   fn from(color: Color) -> Self {
     [color.r, color.g, color.b]
   }
+}
+
+pub struct MdrMaterialBuffer {
+  pub material_data: Arc<CpuAccessibleBuffer<MaterialUniformData>>,
 }
