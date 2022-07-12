@@ -1,4 +1,6 @@
-use super::{material::MdrMaterial, mesh::MdrMesh, transform::MdrTransform};
+use crate::graphics::resources::{MdrMaterial, MdrMesh};
+
+use super::transform::MdrTransform;
 
 pub struct MdrSceneObject {
   pub mesh: MdrMesh,

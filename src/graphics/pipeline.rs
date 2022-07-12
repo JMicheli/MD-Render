@@ -15,7 +15,7 @@ use vulkano::{
   shader::ShaderModule,
 };
 
-use crate::scene::Vertex;
+use super::resources::MdrVertex;
 
 pub struct MdrPipeline {
   pub graphics_pipeline: Arc<GraphicsPipeline>,
@@ -30,7 +30,7 @@ impl MdrPipeline {
     viewport: &Viewport,
   ) -> Arc<Self> {
     let graphics_pipeline = GraphicsPipeline::start()
-      .vertex_input_state(BuffersDefinition::new().vertex::<Vertex>())
+      .vertex_input_state(BuffersDefinition::new().vertex::<MdrVertex>())
       .vertex_shader(vs.entry_point("main").unwrap(), ())
       .input_assembly_state(InputAssemblyState::new())
       .viewport_state(ViewportState::viewport_fixed_scissor_irrelevant([

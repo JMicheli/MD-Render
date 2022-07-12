@@ -5,7 +5,7 @@ use winit::{
 };
 
 use crate::{
-  graphics_context::MdrGraphicsContext,
+  graphics::MdrGraphicsContext,
   input::{MdrInputContext, MdrInputState},
   scene::MdrScene,
   update::MdrUpdateContext,

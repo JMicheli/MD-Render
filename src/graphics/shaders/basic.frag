@@ -27,7 +27,6 @@ layout(set = 1, binding = 0) uniform MaterialUniformData {
 ///////////////////////
 //TODO Remove test code
 ///////////////////////
-
 const vec3 light_position = vec3(1.0, 3.0, 3.0);
 const vec3 light_color = vec3(1.0);
 
@@ -37,16 +36,25 @@ const float specular_strength = 0.5;
 // Shader Entry Point
 /////////////////////
 void main() {
+  // Calculate normalized directional vectors for lighting
+  // Surface normal
   vec3 N = normalize(v_normal);
+  // Direction to light
   vec3 L = normalize(light_position - v_position);
+  // Direction to viewer
   vec3 V = normalize(camera.position - v_position);
+  // Direction of a reflected light ray
   vec3 R = reflect(-L, N);
 
+  // Phong BRDF
+  // Ambient contribution
   vec3 ambient = ambient_strength * light_color;
   
+  // Diffuse contribution
   float diffusion_coefficient = max(dot(N, L), 0.0);
   vec3 diffuse = diffusion_coefficient * light_color;
 
+  // Specular contribution
   float specular_coefficient = pow(max(dot(V, R), 0.0), material.shininess);
   vec3 specular = specular_strength * specular_coefficient * light_color;
 

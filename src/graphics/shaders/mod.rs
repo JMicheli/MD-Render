@@ -5,7 +5,7 @@ use vulkano::{device::Device, shader::ShaderModule};
 pub mod basic_vertex_shader {
   vulkano_shaders::shader! {
     ty: "vertex",
-    path: "src/shaders/basic.vert",
+    path: "src/graphics/shaders/basic.vert",
     types_meta: {
       use bytemuck::{Pod, Zeroable};
 
@@ -17,7 +17,7 @@ pub mod basic_vertex_shader {
 pub mod basic_fragment_shader {
   vulkano_shaders::shader! {
     ty: "fragment",
-    path: "src/shaders/basic.frag",
+    path: "src/graphics/shaders/basic.frag",
   }
 }
 

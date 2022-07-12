@@ -25,15 +25,16 @@ use vulkano::{
 };
 
 use crate::{
-  graphics_context::{
+  graphics::{
     pipeline::MdrPipeline,
+    resources::MdrVertex,
+    shaders::{
+      self,
+      basic_vertex_shader::ty::{CameraUniformData, MaterialUniformData, ObjectPushConstants},
+    },
     window::{MdrWindow, MdrWindowOptions},
   },
-  scene::{MdrCamera, MdrScene, MdrSceneObject, Vertex},
-  shaders::{
-    self,
-    basic_vertex_shader::ty::{CameraUniformData, MaterialUniformData, ObjectPushConstants},
-  },
+  scene::{MdrCamera, MdrScene, MdrSceneObject},
 };
 
 /// A Vulkan graphics context, contains Vulkano members.
@@ -367,7 +368,7 @@ impl MdrGraphicsContext {
     logical_device: &Arc<Device>,
     object: &MdrSceneObject,
   ) -> (
-    Arc<CpuAccessibleBuffer<[Vertex]>>,
+    Arc<CpuAccessibleBuffer<[MdrVertex]>>,
     Arc<CpuAccessibleBuffer<[u32]>>,
     u32,
     Arc<CpuAccessibleBuffer<MaterialUniformData>>,

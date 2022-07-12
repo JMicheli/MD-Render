@@ -2,7 +2,8 @@ use std::{env, path::Path};
 
 use log::info;
 
-use mdr_engine::{logger, MdrEngine, MdrEngineOptions, MdrMaterial, MdrSceneObject};
+use mdr_engine::resources::MdrMaterial;
+use mdr_engine::{logger, MdrEngine, MdrEngineOptions, MdrSceneObject};
 
 // Consts for this example
 const CAMERA_MOV_SPEED: f32 = 0.5;

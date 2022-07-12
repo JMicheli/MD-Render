@@ -1,18 +1,10 @@
-use bytemuck::{Pod, Zeroable};
 use log::{debug, error};
 
-#[repr(C)]
-#[derive(Default, Copy, Clone, Zeroable, Pod)]
-pub struct Vertex {
-  pub a_position: [f32; 3],
-  pub a_normal: [f32; 3],
-}
-
-vulkano::impl_vertex!(Vertex, a_position, a_normal);
+use super::MdrVertex;
 
 #[derive(Default)]
 pub struct MdrMesh {
-  pub vertices: Vec<Vertex>,
+  pub vertices: Vec<MdrVertex>,
   pub indices: Vec<u32>,
 }
 
@@ -43,7 +35,7 @@ impl MdrMesh {
     let mut vertices = Vec::with_capacity(vertex_count);
     for vertex_index in 0..vertex_count {
       let index = 3 * vertex_index;
-      vertices.push(Vertex {
+      vertices.push(MdrVertex {
         a_position: [positions[index], positions[index + 1], positions[index + 2]],
         a_normal: [normals[index], normals[index + 1], normals[index + 2]],
       });

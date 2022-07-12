@@ -17,10 +17,10 @@ impl MdrUpdateContext {
   }
 
   /// Set the update function to use each frame, the function should be in the form
-  /// of a closure which provides the following references:
-  ///   * `&mut MdrScene` - A mutable reference to the scene being updated
-  ///   * `&MdrInputState` - A reference to the input state this frame
-  ///   * `f32` - the time delta since last frame in seconds
+  /// of a closure which operates on the following:
+  ///   * `&mut MdrScene` - A mutable reference to the scene being updated.
+  ///   * `&MdrInputState` - A reference to the input state this frame.
+  ///   * `f32` - the time delta since last frame in seconds.
   pub fn set_update_function(
     &mut self,
     f: Box<dyn FnMut(&mut MdrScene, &MdrInputState, f32) -> ()>,
@@ -34,6 +34,7 @@ impl MdrUpdateContext {
     let current_instant = Instant::now();
     let dt = (current_instant - self.last_instant).as_secs_f32();
 
+    // User-set update function
     (self.update_function)(scene, input_state, dt);
 
     self.last_instant = current_instant;
