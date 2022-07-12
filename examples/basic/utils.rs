@@ -16,6 +16,8 @@ const ASSET_PREFIX: &str = "examples/basic/assets/";
 #[cfg(not(debug_assertions))]
 const ASSET_PREFIX: &str = "assets/";
 
+/// A helper function for linking assets in both debug and release versions
+/// of the example.
 pub fn asset(asset_path: &str) -> String {
   let asset_path_prefix = Path::new(ASSET_PREFIX);
   asset_path_prefix

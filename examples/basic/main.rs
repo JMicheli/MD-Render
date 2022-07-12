@@ -48,11 +48,11 @@ fn main() {
     if input_state.w {
       scene.camera.transform.translation.z += dt * CAMERA_MOV_SPEED;
     }
-    if input_state.a {
-      scene.camera.transform.translation.x += dt * CAMERA_MOV_SPEED;
-    }
     if input_state.d {
       scene.camera.transform.translation.x += dt * -CAMERA_MOV_SPEED;
+    }
+    if input_state.a {
+      scene.camera.transform.translation.x += dt * CAMERA_MOV_SPEED;
     }
     if input_state.s {
       scene.camera.transform.translation.z += dt * -CAMERA_MOV_SPEED;

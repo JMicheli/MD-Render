@@ -161,7 +161,7 @@ impl MdrGraphicsContext {
         Err(AcquireError::OutOfDate) => {
           debug!("Swapchain out of date, flagging for recreation");
           self.should_recreate_swapchain = true;
-          return;
+          return; // No render this frame
         }
         Err(e) => panic!("Failed to acquire next swapchain image: {:?}", e),
       };
@@ -207,7 +207,7 @@ impl MdrGraphicsContext {
       }
     };
 
-    // Store as previous frame
+    // Store future and index for this frame's completion
     self.frame_futures[image_index] = Some(end_of_frame_future);
     self.previous_frame_index = image_index;
     trace!("Completed draw")
@@ -257,6 +257,7 @@ impl MdrGraphicsContext {
     self.window_was_resized = true;
   }
 
+  /// Updates a scene's camera's aspect ratio to match the swapchain.
   pub fn update_scene_aspect_ratio(&mut self, scene: &mut MdrScene) {
     if self.updated_aspect_ratio {
       scene.camera.aspect_ratio = self.aspect_ratio();
@@ -264,7 +265,8 @@ impl MdrGraphicsContext {
     }
   }
 
-  pub fn create_command_buffer(
+  // Generate a command buffer for drawing a `MdrScene`.
+  fn create_command_buffer(
     logical_device: &Arc<Device>,
     queue: &Arc<Queue>,
     pipeline: &Arc<MdrPipeline>,
