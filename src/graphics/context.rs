@@ -25,16 +25,19 @@ use vulkano::{
 };
 
 use crate::{
+  config::MAX_LIGHTS,
   graphics::{
     pipeline::MdrPipeline,
     shaders::{
       self,
-      basic_vertex_shader::ty::{CameraUniformData, ObjectPushConstants},
+      basic_vertex_shader::ty::{ObjectPushConstants, SceneDataObject},
     },
     window::{MdrWindow, MdrWindowOptions},
   },
-  scene::{MdrCamera, MdrScene},
+  scene::MdrScene,
 };
+
+use super::shaders::basic_vertex_shader::ty::{CameraData, PointLightData};
 
 /// A Vulkan graphics context, contains Vulkano members.
 pub struct MdrGraphicsContext {
@@ -297,8 +300,8 @@ impl MdrGraphicsContext {
     builder.bind_pipeline_graphics(pipeline.graphics_pipeline.clone());
 
     // Upload camera transforms
-    let camera_buffer = Self::upload_camera_buffer(logical_device, &scene.camera);
-    let camera_descriptor_set = PersistentDescriptorSet::new(
+    let scene_buffer = Self::upload_scene_data(logical_device, scene);
+    let scene_descriptor_set = PersistentDescriptorSet::new(
       pipeline
         .graphics_pipeline
         .layout()
@@ -306,14 +309,14 @@ impl MdrGraphicsContext {
         .get(0)
         .unwrap()
         .clone(),
-      [WriteDescriptorSet::buffer(0, camera_buffer)],
+      [WriteDescriptorSet::buffer(0, scene_buffer)],
     )
     .unwrap();
     builder.bind_descriptor_sets(
       PipelineBindPoint::Graphics,
       pipeline.graphics_pipeline.layout().clone(),
       0,
-      camera_descriptor_set,
+      scene_descriptor_set,
     );
 
     // Render objects
@@ -374,12 +377,13 @@ impl MdrGraphicsContext {
     command_buffer
   }
 
-  fn upload_camera_buffer(
+  fn upload_scene_data(
     logical_device: &Arc<Device>,
-    camera: &MdrCamera,
-  ) -> Arc<CpuAccessibleBuffer<CameraUniformData>> {
-    let view_matrix = camera.get_view_matrix();
-    let projection_matrix = camera.get_projection_matrix();
+    scene: &MdrScene,
+  ) -> Arc<CpuAccessibleBuffer<SceneDataObject>> {
+    // Camera data
+    let view_matrix = scene.camera.get_view_matrix();
+    let projection_matrix = scene.camera.get_projection_matrix();
 
     let view_transform_column = view_matrix.column(3);
     let position_vector = Vector3::new(
@@ -387,17 +391,31 @@ impl MdrGraphicsContext {
       view_transform_column.y,
       view_transform_column.z,
     );
+    // Camera data object
+    let camera = CameraData {
+      position: position_vector.into(),
+      _dummy0: [0; 4],
 
+      view: view_matrix.into(),
+      proj: projection_matrix.into(),
+    };
+
+    // Lighting data
+    let point_lights: [PointLightData; MAX_LIGHTS] =
+      scene.lights.get_light_array().map(|light| PointLightData {
+        color: light.color.into(),
+        _dummy0: [0; 4],
+        position: light.translation.into(),
+        brightness: light.brightness,
+      });
     CpuAccessibleBuffer::from_data(
       logical_device.clone(),
-      BufferUsage::uniform_buffer(),
+      BufferUsage::storage_buffer(),
       false,
-      CameraUniformData {
-        position: position_vector.into(),
-        _dummy0: [0, 0, 0, 0],
-
-        view: view_matrix.into(),
-        proj: projection_matrix.into(),
+      SceneDataObject {
+        camera,
+        point_lights,
+        point_light_count: scene.lights.get_count(),
       },
     )
     .unwrap()

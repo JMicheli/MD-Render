@@ -5,13 +5,15 @@ use vulkano::{
   device::Device,
 };
 
-use crate::graphics::shaders::basic_vertex_shader::ty::MaterialUniformData;
+use super::color::MdrColor;
+use crate::graphics::shaders::basic_fragment_shader::ty::MaterialUniformData;
 
+/// Represents a material resource to be sent to the GPU.
 pub struct MdrMaterial {
-  pub diffuse_color: Color,
+  pub diffuse_color: MdrColor,
   pub alpha: f32,
 
-  pub specular_color: Color,
+  pub specular_color: MdrColor,
   pub shininess: f32,
 }
 
@@ -33,111 +35,20 @@ impl MdrMaterial {
 
     MdrMaterialBuffer { material_data }
   }
-
-  pub fn red() -> Self {
-    Self {
-      diffuse_color: Color::new(0.8, 0.0, 0.0),
-      alpha: 1.0,
-      specular_color: Color::white(),
-      shininess: 20.0,
-    }
-  }
-
-  pub fn green() -> Self {
-    Self {
-      diffuse_color: Color::new(0.0, 0.8, 0.0),
-      alpha: 1.0,
-      specular_color: Color::white(),
-      shininess: 20.0,
-    }
-  }
-
-  pub fn blue() -> Self {
-    Self {
-      diffuse_color: Color::new(0.0, 0.0, 0.8),
-      alpha: 1.0,
-      specular_color: Color::white(),
-      shininess: 20.0,
-    }
-  }
-
-  pub fn grey() -> Self {
-    Self {
-      diffuse_color: Color::new(0.3, 0.3, 0.3),
-      alpha: 1.0,
-      specular_color: Color::white(),
-      shininess: 5.0,
-    }
-  }
 }
 
 impl Default for MdrMaterial {
   fn default() -> Self {
     Self {
-      diffuse_color: Color::new(0.0, 0.8, 0.0),
+      diffuse_color: MdrColor {
+        r: 0.0,
+        g: 0.8,
+        b: 0.0,
+      },
       alpha: 1.0,
-      specular_color: Color::white(),
+      specular_color: MdrColor::white(),
       shininess: 20.0,
     }
-  }
-}
-
-#[derive(Copy, Clone)]
-pub struct Color {
-  pub r: f32,
-  pub g: f32,
-  pub b: f32,
-}
-
-impl Color {
-  pub fn new(r: f32, g: f32, b: f32) -> Self {
-    Self { r, g, b }
-  }
-
-  pub const fn white() -> Self {
-    Self {
-      r: 1.0,
-      g: 1.0,
-      b: 1.0,
-    }
-  }
-
-  pub const fn red() -> Self {
-    Self {
-      r: 1.0,
-      g: 0.0,
-      b: 0.0,
-    }
-  }
-
-  pub const fn green() -> Self {
-    Self {
-      r: 0.0,
-      g: 1.0,
-      b: 0.0,
-    }
-  }
-
-  pub const fn blue() -> Self {
-    Self {
-      r: 0.0,
-      g: 0.0,
-      b: 1.0,
-    }
-  }
-
-  pub const fn black() -> Self {
-    Self {
-      r: 0.0,
-      g: 0.0,
-      b: 0.0,
-    }
-  }
-}
-
-impl From<Color> for [f32; 3] {
-  fn from(color: Color) -> Self {
-    [color.r, color.g, color.b]
   }
 }
 

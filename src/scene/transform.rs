@@ -1,5 +1,6 @@
 use nalgebra::{Matrix4, Rotation3, Scale3, Translation3};
 
+#[derive(Clone, Copy)]
 pub struct MdrTransform {
   pub translation: MdrTranslation,
   pub rotation: MdrRotation,
@@ -33,6 +34,7 @@ impl MdrTransform {
 }
 
 /// Represents a translation along the x, y, and z axes.
+#[derive(Clone, Copy)]
 pub struct MdrTranslation {
   pub x: f32,
   pub y: f32,
@@ -65,7 +67,15 @@ impl MdrTranslation {
   }
 }
 
+impl From<MdrTranslation> for [f32; 3] {
+  fn from(translation: MdrTranslation) -> Self {
+    [translation.x, translation.y, translation.z]
+  }
+}
+
 /// Represents a rotation in **degrees** around the x, y, and z axes.
+#[derive(Clone, Copy)]
+
 pub struct MdrRotation {
   pub x: f32,
   pub y: f32,
@@ -99,6 +109,8 @@ impl MdrRotation {
 }
 
 /// Represents a scale along the x, y, and z axes.
+#[derive(Clone, Copy)]
+
 pub struct MdrScale {
   pub x: f32,
   pub y: f32,

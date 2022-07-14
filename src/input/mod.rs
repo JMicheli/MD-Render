@@ -1,5 +1,8 @@
 use log::trace;
-use winit::event::{ElementState, KeyboardInput, MouseButton, VirtualKeyCode};
+use winit::{
+  dpi::PhysicalPosition,
+  event::{ElementState, KeyboardInput, MouseButton, VirtualKeyCode},
+};
 
 pub struct MdrInputState {
   pub left: bool,
@@ -11,6 +14,11 @@ pub struct MdrInputState {
   pub a: bool,
   pub s: bool,
   pub d: bool,
+
+  pub mouse_position: [f32; 2],
+  pub mouse_left: bool,
+  pub mouse_right: bool,
+  pub mouse_delta: [f32; 2],
 }
 
 pub struct MdrInputContext {
@@ -30,6 +38,11 @@ impl MdrInputContext {
         a: false,
         s: false,
         d: false,
+
+        mouse_position: [0.0, 0.0],
+        mouse_left: false,
+        mouse_right: false,
+        mouse_delta: [0.0, 0.0],
       },
     }
   }
@@ -70,7 +83,37 @@ impl MdrInputContext {
     }
   }
 
-  pub fn mouse_input(&mut self, _state: &ElementState, _button: &MouseButton) {
+  pub fn mouse_input(&mut self, state: &ElementState, button: &MouseButton) {
     trace!("Mouse event");
+    match (button, state) {
+      (MouseButton::Left, ElementState::Pressed) => {
+        self.state.mouse_left = true;
+      }
+      (MouseButton::Right, ElementState::Pressed) => {
+        self.state.mouse_right = true;
+      }
+      (MouseButton::Left, ElementState::Released) => {
+        self.state.mouse_left = false;
+      }
+      (MouseButton::Right, ElementState::Released) => {
+        self.state.mouse_right = false;
+      }
+      _ => {}
+    }
+  }
+
+  pub fn mouse_moved_input(&mut self, position: PhysicalPosition<f64>) {
+    trace!("Mouse moved event");
+    let new_position = [position.x as f32, position.y as f32];
+    self.state.mouse_delta = [
+      new_position[0] - self.state.mouse_position[0],
+      new_position[1] - self.state.mouse_position[1],
+    ];
+    self.state.mouse_position = new_position;
+  }
+
+  pub fn cleanup_after_update(&mut self) {
+    // Zero mouse delta in case mouse has stopped moving
+    self.state.mouse_delta = [0.0, 0.0];
   }
 }

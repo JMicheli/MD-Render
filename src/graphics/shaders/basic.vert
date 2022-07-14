@@ -8,22 +8,26 @@ layout(location = 1) in vec3 a_normal;
 layout(location = 0) out vec3 v_position;
 layout(location = 1) out vec3 v_normal;
 
-// Uniform buffer objects
-/////////////////////////
-layout(set = 0, binding = 0) uniform CameraUniformData {
+// Input buffer objects
+///////////////////////
+struct CameraData {
   vec3 position;
 
   mat4 view;
   mat4 proj;
-} camera;
+};
 
-layout(set = 1, binding = 0) uniform MaterialUniformData {
-  vec3 diffuse_color;
-  float alpha;
+struct PointLightData {
+  vec3 color;
+  vec3 position;
+  float brightness;
+};
 
-  vec3 specular_color;
-  float shininess;
-} material;
+layout(set = 0, binding = 0) buffer SceneDataObject {
+  CameraData camera;
+  PointLightData point_lights[10];
+  uint point_light_count;
+} scene_data;
 
 layout(push_constant) uniform ObjectPushConstants
 {
@@ -38,9 +42,9 @@ void main() {
 
   // Calculate surface normal at input vertex
   // TODO fix to use transpose inverse
-  v_normal = normalize(mat3(camera.view) * a_normal);
+  v_normal = normalize(mat3(scene_data.camera.view) * a_normal);
   
   // Write output of vertex position
   v_position = world_position.xyz;
-  gl_Position = camera.proj * camera.view * world_position;
+  gl_Position = scene_data.camera.proj * scene_data.camera.view * world_position;
 }

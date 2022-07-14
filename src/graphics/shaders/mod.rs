@@ -18,6 +18,11 @@ pub mod basic_fragment_shader {
   vulkano_shaders::shader! {
     ty: "fragment",
     path: "src/graphics/shaders/basic.frag",
+    types_meta: {
+      use bytemuck::{Pod, Zeroable};
+
+      #[derive(Clone, Copy, Zeroable, Pod)]
+    },
   }
 }
 

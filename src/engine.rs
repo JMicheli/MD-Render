@@ -67,6 +67,13 @@ impl MdrEngine {
         None
       }
       Event::WindowEvent {
+        event: WindowEvent::CursorMoved { position, .. },
+        ..
+      } => {
+        self.input_context.mouse_moved_input(position);
+        None
+      }
+      Event::WindowEvent {
         event: WindowEvent::KeyboardInput { input, .. },
         ..
       } => {
@@ -77,6 +84,7 @@ impl MdrEngine {
         self
           .update_context
           .update_scene(&mut self.scene, &self.input_context.state);
+        self.input_context.cleanup_after_update();
         None
       }
       Event::RedrawEventsCleared => {

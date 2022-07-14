@@ -2,13 +2,13 @@ use crate::graphics::resources::{MdrMaterial, MdrMesh};
 
 use super::transform::MdrTransform;
 
-pub struct MdrSceneObject {
+pub struct MdrRenderObject {
   pub mesh: MdrMesh,
   pub transform: MdrTransform,
   pub material: MdrMaterial,
 }
 
-impl MdrSceneObject {
+impl MdrRenderObject {
   pub fn new(mesh: MdrMesh) -> Self {
     Self {
       mesh,
