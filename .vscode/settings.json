@@ -7,4 +7,9 @@
   },
 
   "glsllint.glslangValidatorArgs": "--client vulkan100",
+
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  }
 }

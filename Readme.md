@@ -1,18 +1,21 @@
 # MD Renderer
 
-A from-scratch engine using the Vulkano crate to safely interact with the Vulkan API.
+A pure Rust game engine using [vulkano](https://crates.io/crates/vulkano) to safely interact with graphics hardware through the Vulkan API.
 
 ## Running the example
 
-Download the appropriate example for your platform from the [releases page](https://github.com/JMicheli/MD-Render/releases).
+Because the engine is in active development, it is recommended to build the example from source (see instructions below). The release packages may be significantly behind the current state of the engine, and may not even run on some platforms, as the build automation scripts have not been extensively tested. If you wish to download a release, do the following:
 
-Unzip the folder and run the binary inside to view the example.
+1. Download the appropriate example for your platform from the [releases page](https://github.com/JMicheli/MD-Render/releases).
+2. Unzip the folder and run the binary inside to view the example.
 
 ### About the example
 
-The example should display a simple scene containing a red, high-poly version of the [Blender monkey mesh](https://docs.blender.org/manual/en/latest/modeling/meshes/primitives.html#monkey) (her name is Suzanne), a green icosphere, and a grey ground plane.
+The example should display a simple scene containing a red, high-poly version of the [Blender monkey mesh](https://docs.blender.org/manual/en/latest/modeling/meshes/primitives.html#monkey) (her name is Suzanne), a green icosphere, a blue cube, and a grey ground plane, all lit by one point light.
 
-At present, the scene uses basic directional lighting and diffuse-only shading, and provides basic spherical camera controls. The camera can be rotated left/right and pitched up/down using the respective arrow keys.
+The scene provides very rudimentary controls, with the <kbd>W</kbd>, <kbd>A</kbd>, <kbd>S</kbd>, and <kbd>D</kbd> keys controlling directional movement along the scene's `x` and `z` basis vectors (_not_ along the camera's forward axis), and the mouse controlling rotation of the camera when <kbd>RMB</kbd> is held. The arrow keys can also be used to move the point light along the same directions as the camera.
+
+This example will continue to develop as more features are added to the engine.
 
 ## Compiling from source
 
@@ -26,4 +29,4 @@ Navigate into the directory and run the `basic` example with cargo. This will ca
 
 `cargo run --example basic`
 
-© Joseph W. Micheli 2022, all rights reserved. See `license.txt` for further information.
+© Joseph W. Micheli 2022, all rights reserved. See [license.txt](https://github.com/JMicheli/MD-Renderer/blob/main/license.txt) for further information.
