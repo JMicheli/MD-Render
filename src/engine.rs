@@ -5,7 +5,7 @@ use winit::{
 };
 
 use crate::{
-  graphics::MdrGraphicsContext,
+  graphics::{MdrGraphicsContext, MdrResourceManager},
   input::{MdrInputContext, MdrInputState},
   scene::MdrScene,
   update::MdrUpdateContext,
@@ -36,6 +36,10 @@ impl MdrEngine {
     };
 
     (engine, event_loop)
+  }
+
+  pub fn manage_resources(&mut self) -> &mut MdrResourceManager {
+    &mut self.graphics_context.resource_manager
   }
 
   pub fn set_update_function(&mut self, f: Box<dyn FnMut(&mut MdrScene, &MdrInputState, f32)>) {

@@ -9,23 +9,11 @@ pub struct MdrRenderObject {
 }
 
 impl MdrRenderObject {
-  pub fn new(mesh: MdrMesh) -> Self {
+  pub fn new(mesh: MdrMesh, material: MdrMaterial) -> Self {
     Self {
       mesh,
       transform: MdrTransform::identity(),
-      material: MdrMaterial::default(),
+      material,
     }
-  }
-
-  pub fn empty() -> Self {
-    Self {
-      mesh: MdrMesh::default(),
-      transform: MdrTransform::identity(),
-      material: MdrMaterial::default(),
-    }
-  }
-
-  pub fn from_obj(file_path: &str) -> Self {
-    Self::new(MdrMesh::load_obj(file_path))
   }
 }

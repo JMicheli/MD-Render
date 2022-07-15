@@ -5,5 +5,5 @@ pub mod vertex;
 
 pub use color::MdrColor;
 pub use material::MdrMaterial;
-pub use mesh::MdrMesh;
+pub use mesh::{MdrGpuMeshHandle, MdrMesh, MdrMeshData};
 pub use vertex::MdrVertex;

@@ -3,6 +3,7 @@ use std::env;
 use log::info;
 
 use mdr_engine::resources::MdrMaterial;
+use mdr_engine::scene::transform::MdrTransform;
 use mdr_engine::{
   logger,
   scene::{MdrLight, MdrRenderObject},
@@ -27,25 +28,45 @@ fn main() {
   };
   let (mut engine, event_loop) = MdrEngine::new(opts);
 
-  // Suzanne
-  let mut monkey = MdrRenderObject::from_obj(asset("meshes/suzanne.obj").as_str());
+  // Create object meshes
+  let monkey_mesh = engine
+    .manage_resources()
+    .load_mesh_obj(asset("meshes/suzanne.obj").as_str(), "monkey")
+    .unwrap();
+  let sphere_mesh = engine
+    .manage_resources()
+    .load_mesh_obj(asset("meshes/sphere.obj").as_str(), "sphere")
+    .unwrap();
+  let cube_mesh = engine
+    .manage_resources()
+    .load_mesh_obj(asset("meshes/cube.obj").as_str(), "cube")
+    .unwrap();
+  let plane_mesh = engine
+    .manage_resources()
+    .load_mesh_obj(asset("meshes/plane.obj").as_str(), "plane")
+    .unwrap();
+
+  // Create object materials
+  let monkey_mat = MdrMaterial::red();
+  let sphere_mat = MdrMaterial::green();
+  let cube_mat = MdrMaterial::blue();
+  let plane_mat = MdrMaterial::grey();
+
+  // Add suzanne
+  let mut monkey = MdrRenderObject::new(monkey_mesh, monkey_mat);
   monkey.transform.translation.set(0.0, 0.0, -2.0);
-  monkey.material = MdrMaterial::red();
   engine.scene.add_object(monkey);
-  // Sphere
-  let mut sphere = MdrRenderObject::from_obj(asset("meshes/sphere.obj").as_str());
+  // Add sphere
+  let mut sphere = MdrRenderObject::new(sphere_mesh, sphere_mat);
   sphere.transform.translation.set(2.0, -2.0, -3.0);
-  sphere.material = MdrMaterial::green();
   engine.scene.add_object(sphere);
-  // Cube
-  let mut cube = MdrRenderObject::from_obj(asset("meshes/cube.obj").as_str());
+  // Add cube
+  let mut cube = MdrRenderObject::new(cube_mesh, cube_mat);
   cube.transform.translation.set(-2.0, -2.0, -3.0);
-  cube.material = MdrMaterial::blue();
   engine.scene.add_object(cube);
-  // Ground plane
-  let mut ground_plane = MdrRenderObject::from_obj(asset("meshes/plane.obj").as_str());
+  // Add ground plane
+  let mut ground_plane = MdrRenderObject::new(plane_mesh, plane_mat);
   ground_plane.transform.translation.set(0.0, 1.0, 0.0);
-  ground_plane.material = MdrMaterial::grey();
   engine.scene.add_object(ground_plane);
 
   // Add first white light

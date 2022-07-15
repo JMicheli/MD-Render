@@ -1,4 +1,4 @@
-use crate::{config::MAX_LIGHTS, resources::MdrColor, scene::transform::MdrTranslation};
+use crate::{config::MAX_POINT_LIGHTS, resources::MdrColor, scene::transform::MdrTranslation};
 
 #[derive(Clone, Copy)]
 pub struct MdrLight {
@@ -43,16 +43,16 @@ pub struct MdrLightSet {
 impl MdrLightSet {
   pub fn new() -> Self {
     Self {
-      lights: Vec::<MdrLight>::with_capacity(MAX_LIGHTS),
+      lights: Vec::<MdrLight>::with_capacity(MAX_POINT_LIGHTS),
       light_count: 0,
     }
   }
 
   pub fn add_light(&mut self, light: MdrLight) {
-    if self.light_count == MAX_LIGHTS {
+    if self.light_count == MAX_POINT_LIGHTS {
       panic!(
         "You added more than {} lights and now everything broke, be careful.",
-        MAX_LIGHTS
+        MAX_POINT_LIGHTS
       )
     }
 
@@ -61,7 +61,7 @@ impl MdrLightSet {
   }
 
   pub fn remove_light(&mut self, light_index: usize) {
-    assert!(light_index < MAX_LIGHTS);
+    assert!(light_index < MAX_POINT_LIGHTS);
 
     self.lights.remove(light_index);
     self.light_count -= 1;
@@ -75,8 +75,8 @@ impl MdrLightSet {
     self.lights.get_mut(light_index)
   }
 
-  pub fn get_light_array(&self) -> [MdrLight; MAX_LIGHTS] {
-    let mut light_array = [MdrLight::unused(); MAX_LIGHTS];
+  pub fn get_light_array(&self) -> [MdrLight; MAX_POINT_LIGHTS] {
+    let mut light_array = [MdrLight::unused(); MAX_POINT_LIGHTS];
     for i in 0..self.light_count {
       light_array[i] = self.lights[i];
     }

@@ -25,7 +25,7 @@ use vulkano::{
 };
 
 use crate::{
-  config::MAX_LIGHTS,
+  config::MAX_POINT_LIGHTS,
   graphics::{
     pipeline::MdrPipeline,
     shaders::{
@@ -37,10 +37,14 @@ use crate::{
   scene::MdrScene,
 };
 
-use super::shaders::basic_vertex_shader::ty::{CameraData, PointLightData};
+use super::{
+  resource_manager::MdrResourceManager,
+  shaders::basic_vertex_shader::ty::{CameraData, PointLightData},
+};
 
 /// A Vulkan graphics context, contains Vulkano members.
 pub struct MdrGraphicsContext {
+  pub(crate) resource_manager: MdrResourceManager,
   pub(crate) window: Arc<MdrWindow>,
 
   logical_device: Arc<Device>,
@@ -124,6 +128,9 @@ impl MdrGraphicsContext {
     // Create vector of futures corresponding to each swapchain image
     let frame_futures = Self::set_up_frame_futures(swapchain_images.len());
 
+    // Create resource manager
+    let resource_manager = MdrResourceManager::new(logical_device.clone(), queue.clone());
+
     Self {
       window,
 
@@ -135,6 +142,8 @@ impl MdrGraphicsContext {
       viewport,
       pipeline,
       framebuffers,
+
+      resource_manager,
 
       window_was_resized: false,
       should_recreate_swapchain: false,
@@ -183,7 +192,7 @@ impl MdrGraphicsContext {
     };
     previous_frame_end.cleanup_finished();
 
-    let command_buffer = Self::create_command_buffer(
+    let command_buffer = self.create_command_buffer(
       &self.logical_device,
       &self.queue,
       &self.pipeline,
@@ -270,6 +279,7 @@ impl MdrGraphicsContext {
 
   // Generate a command buffer for drawing a `MdrScene`.
   fn create_command_buffer(
+    &self,
     logical_device: &Arc<Device>,
     queue: &Arc<Queue>,
     pipeline: &Arc<MdrPipeline>,
@@ -321,8 +331,8 @@ impl MdrGraphicsContext {
 
     // Render objects
     for object in scene.scene_objects.iter() {
-      // Upload object's mesh
-      let mesh_buffer = object.mesh.upload_to_gpu(logical_device);
+      // Get handle to the mesh buffers from the resource manager
+      let mesh_handle = self.resource_manager.get_mesh_handle(&object.mesh);
       // Upload object's material data
       let material_buffer = object.material.upload_to_gpu(logical_device);
 
@@ -333,8 +343,8 @@ impl MdrGraphicsContext {
 
       // Bind vertex data
       builder
-        .bind_vertex_buffers(0, mesh_buffer.vertex_data.clone())
-        .bind_index_buffer(mesh_buffer.index_data.clone());
+        .bind_vertex_buffers(0, mesh_handle.vertex_subbuffer.clone())
+        .bind_index_buffer(mesh_handle.index_subbuffer.clone());
 
       // Upload material data
       // TODO Order by material and bind once per mat
@@ -365,7 +375,7 @@ impl MdrGraphicsContext {
 
       // Draw call
       builder
-        .draw_indexed(mesh_buffer.index_count, 1, 0, 0, 0)
+        .draw_indexed(mesh_handle.index_count, 1, 0, 0, 0)
         .unwrap();
     }
 
@@ -401,7 +411,7 @@ impl MdrGraphicsContext {
     };
 
     // Lighting data
-    let point_lights: [PointLightData; MAX_LIGHTS] =
+    let point_lights: [PointLightData; MAX_POINT_LIGHTS] =
       scene.lights.get_light_array().map(|light| PointLightData {
         color: light.color.into(),
         _dummy0: [0; 4],
