@@ -16,7 +16,7 @@ pub struct MdrMesh {
 }
 
 pub struct MdrGpuMeshHandle {
-  pub(crate) vertex_subbuffer: Arc<CpuBufferPoolChunk<MdrVertex, Arc<StdMemoryPool>>>,
-  pub(crate) index_subbuffer: Arc<CpuBufferPoolChunk<u32, Arc<StdMemoryPool>>>,
+  pub(crate) vertex_chunk: Arc<CpuBufferPoolChunk<MdrVertex, Arc<StdMemoryPool>>>,
+  pub(crate) index_chunk: Arc<CpuBufferPoolChunk<u32, Arc<StdMemoryPool>>>,
   pub(crate) index_count: u32,
 }

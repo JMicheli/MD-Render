@@ -23,13 +23,13 @@ struct PointLightData {
   float brightness;
 };
 
-layout(set = 0, binding = 0) buffer SceneDataObject {
+layout(set = 0, binding = 0) buffer MdrSceneData {
   CameraData camera;
   PointLightData point_lights[10];
   uint point_light_count;
 } scene_data;
 
-layout(push_constant) uniform ObjectPushConstants
+layout(push_constant) uniform MdrPushConstants
 {
 	mat4 transformation_matrix;
 } object;

@@ -26,13 +26,13 @@ struct PointLightData {
   float brightness;
 };
 
-layout(set = 0, binding = 0) buffer SceneDataObject {
+layout(set = 0, binding = 0) buffer MdrSceneData {
   CameraData camera;
   PointLightData point_lights[MAX_POINT_LIGHTS];
   uint point_light_count;
 } scene_data;
 
-layout(set = 1, binding = 0) uniform MaterialUniformData {
+layout(set = 1, binding = 0) uniform MdrMaterialUniformData {
   vec3 diffuse_color;
   float alpha;
 

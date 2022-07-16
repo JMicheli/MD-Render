@@ -6,7 +6,10 @@ use vulkano::{
   device::{Device, Queue},
 };
 
-use crate::resources::{MdrGpuMeshHandle, MdrMesh, MdrMeshData, MdrVertex};
+use crate::resources::{
+  MdrGpuMaterialHandle, MdrGpuMeshHandle, MdrMaterial, MdrMaterialCreateInfo,
+  MdrMaterialUniformData, MdrMesh, MdrMeshData, MdrVertex,
+};
 
 pub struct MdrResourceManager {
   logical_device: Arc<Device>,
@@ -15,6 +18,9 @@ pub struct MdrResourceManager {
   vertex_buffer_pool: CpuBufferPool<MdrVertex>,
   index_buffer_pool: CpuBufferPool<u32>,
   mesh_library: HashMap<String, MdrGpuMeshHandle>,
+
+  material_buffer_pool: CpuBufferPool<MdrMaterialUniformData>,
+  material_library: HashMap<String, MdrGpuMaterialHandle>,
 }
 
 impl MdrResourceManager {
@@ -26,6 +32,13 @@ impl MdrResourceManager {
       CpuBufferPool::<u32>::new(logical_device.clone(), BufferUsage::index_buffer());
     let mesh_library = HashMap::<String, MdrGpuMeshHandle>::new();
 
+    // Material memory handler initialization
+    let material_buffer_pool = CpuBufferPool::<MdrMaterialUniformData>::new(
+      logical_device.clone(),
+      BufferUsage::uniform_buffer(),
+    );
+    let material_library = HashMap::<String, MdrGpuMaterialHandle>::new();
+
     Self {
       logical_device,
       queue,
@@ -33,6 +46,9 @@ impl MdrResourceManager {
       vertex_buffer_pool,
       index_buffer_pool,
       mesh_library,
+
+      material_buffer_pool,
+      material_library,
     }
   }
 
@@ -83,8 +99,8 @@ impl MdrResourceManager {
       indices: indices.clone(),
     };
 
-    let handle = self.upload_mesh_to_gpu(mesh);
-    self.mesh_library.insert(String::from(name), handle);
+    let mesh_handle = self.upload_mesh_to_gpu(mesh);
+    self.mesh_library.insert(String::from(name), mesh_handle);
 
     Ok(MdrMesh {
       name: String::from(name),
@@ -101,15 +117,6 @@ impl MdrResourceManager {
     })
   }
 
-  pub(crate) fn get_mesh_handle(&self, mesh: &MdrMesh) -> &MdrGpuMeshHandle {
-    match self.mesh_library.get_key_value(&mesh.name) {
-      Some((_, V)) => V,
-      None => {
-        panic!("Could not find mesh {} in mesh library", mesh.name);
-      }
-    }
-  }
-
   pub fn unload_mesh(&mut self, name: &str) {
     if !self.mesh_library.contains_key(name) {
       warn!(
@@ -122,12 +129,92 @@ impl MdrResourceManager {
     self.mesh_library.remove(&String::from(name));
   }
 
+  pub fn create_material(
+    &mut self,
+    material_create_info: MdrMaterialCreateInfo,
+    name: &str,
+  ) -> Result<MdrMaterial, MdrResourceError> {
+    // Check that the mesh name isn't already in use
+    if self.material_library.contains_key(name) {
+      error!("Material library already contains name: {}", name);
+      return Err(MdrResourceError::DuplicateMaterialName);
+    }
+
+    // Generate material uniform buffer contents from create info
+    let material = MdrMaterialUniformData {
+      diffuse_color: material_create_info.diffuse_color.into(),
+      alpha: material_create_info.alpha,
+
+      specular_color: material_create_info.specular_color.into(),
+      shininess: material_create_info.shininess,
+    };
+
+    // Push material to GPU and store in library
+    let material_handle = self.upload_material_to_gpu(material);
+    self
+      .material_library
+      .insert(String::from(name), material_handle);
+
+    Ok(MdrMaterial {
+      name: String::from(name),
+    })
+  }
+
+  pub fn retrieve_material(&self, name: &str) -> Result<MdrMaterial, MdrResourceError> {
+    if !self.material_library.contains_key(name) {
+      return Err(MdrResourceError::MaterialNotFound);
+    }
+
+    Ok(MdrMaterial {
+      name: String::from(name),
+    })
+  }
+
+  pub fn unload_material(&mut self, name: &str) {
+    if !self.material_library.contains_key(name) {
+      warn!(
+        "Cannot unload material {} because it is not in the library",
+        name
+      );
+      return;
+    }
+
+    self.material_library.remove(&String::from(name));
+  }
+
+  pub(crate) fn get_mesh_handle(&self, mesh: &MdrMesh) -> &MdrGpuMeshHandle {
+    match self.mesh_library.get_key_value(&mesh.name) {
+      Some((_, handle)) => handle,
+      None => {
+        panic!("Could not find mesh {} in mesh library", mesh.name);
+      }
+    }
+  }
+
+  pub(crate) fn get_material_handle(&self, material: &MdrMaterial) -> &MdrGpuMaterialHandle {
+    match self.material_library.get_key_value(&material.name) {
+      Some((_, handle)) => handle,
+      None => {
+        panic!(
+          "Could not find material {} in material library",
+          material.name
+        );
+      }
+    }
+  }
+
   fn upload_mesh_to_gpu(&mut self, mesh: MdrMeshData) -> MdrGpuMeshHandle {
     let index_count = mesh.indices.len() as u32;
     MdrGpuMeshHandle {
-      vertex_subbuffer: self.vertex_buffer_pool.chunk(mesh.vertices).unwrap(),
-      index_subbuffer: self.index_buffer_pool.chunk(mesh.indices).unwrap(),
+      vertex_chunk: self.vertex_buffer_pool.chunk(mesh.vertices).unwrap(),
+      index_chunk: self.index_buffer_pool.chunk(mesh.indices).unwrap(),
       index_count,
+    }
+  }
+
+  fn upload_material_to_gpu(&mut self, material: MdrMaterialUniformData) -> MdrGpuMaterialHandle {
+    MdrGpuMaterialHandle {
+      material_chunk: self.material_buffer_pool.chunk([material]).unwrap(),
     }
   }
 }
@@ -144,4 +231,11 @@ pub enum MdrResourceError {
   /// Emitted when the resource manager attempts to add a mesh with a name that is
   /// already present in the mesh library.
   DuplicateMeshName,
+
+  /// Emitted when the resource manager cannot find a material with a given name in its
+  /// material library.
+  MaterialNotFound,
+  /// Emitted when the resource manager attempts to add a material with a name that is
+  /// already present in the material library.
+  DuplicateMaterialName,
 }

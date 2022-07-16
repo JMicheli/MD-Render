@@ -2,8 +2,7 @@ use std::env;
 
 use log::info;
 
-use mdr_engine::resources::MdrMaterial;
-use mdr_engine::scene::transform::MdrTransform;
+use mdr_engine::resources::{MdrColor, MdrMaterialCreateInfo};
 use mdr_engine::{
   logger,
   scene::{MdrLight, MdrRenderObject},
@@ -47,10 +46,54 @@ fn main() {
     .unwrap();
 
   // Create object materials
-  let monkey_mat = MdrMaterial::red();
-  let sphere_mat = MdrMaterial::green();
-  let cube_mat = MdrMaterial::blue();
-  let plane_mat = MdrMaterial::grey();
+  let monkey_mat = engine
+    .manage_resources()
+    .create_material(
+      MdrMaterialCreateInfo {
+        diffuse_color: MdrColor::from([0.8, 0.0, 0.0]),
+        alpha: 1.0,
+        specular_color: MdrColor::white(),
+        shininess: 20.0,
+      },
+      "monkey_mat",
+    )
+    .unwrap();
+  let sphere_mat = engine
+    .manage_resources()
+    .create_material(
+      MdrMaterialCreateInfo {
+        diffuse_color: MdrColor::from([0.0, 0.8, 0.0]),
+        alpha: 1.0,
+        specular_color: MdrColor::white(),
+        shininess: 20.0,
+      },
+      "sphere_mat",
+    )
+    .unwrap();
+  let cube_mat = engine
+    .manage_resources()
+    .create_material(
+      MdrMaterialCreateInfo {
+        diffuse_color: MdrColor::from([0.0, 0.0, 0.8]),
+        alpha: 1.0,
+        specular_color: MdrColor::white(),
+        shininess: 20.0,
+      },
+      "cube_mat",
+    )
+    .unwrap();
+  let plane_mat = engine
+    .manage_resources()
+    .create_material(
+      MdrMaterialCreateInfo {
+        diffuse_color: MdrColor::from([0.4, 0.4, 0.4]),
+        alpha: 1.0,
+        specular_color: MdrColor::white(),
+        shininess: 20.0,
+      },
+      "plane_mat",
+    )
+    .unwrap();
 
   // Add suzanne
   let mut monkey = MdrRenderObject::new(monkey_mesh, monkey_mat);

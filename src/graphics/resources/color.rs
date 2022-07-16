@@ -1,5 +1,3 @@
-use super::MdrMaterial;
-
 #[derive(Copy, Clone)]
 pub struct MdrColor {
   pub r: f32,
@@ -55,56 +53,12 @@ impl From<MdrColor> for [f32; 3] {
   }
 }
 
-impl MdrMaterial {
-  pub fn red() -> Self {
+impl From<[f32; 3]> for MdrColor {
+  fn from(rgb: [f32; 3]) -> Self {
     Self {
-      diffuse_color: MdrColor {
-        r: 0.8,
-        g: 0.0,
-        b: 0.0,
-      },
-      alpha: 1.0,
-      specular_color: MdrColor::white(),
-      shininess: 20.0,
-    }
-  }
-
-  pub fn green() -> Self {
-    Self {
-      diffuse_color: MdrColor {
-        r: 0.0,
-        g: 0.8,
-        b: 0.0,
-      },
-      alpha: 1.0,
-      specular_color: MdrColor::white(),
-      shininess: 20.0,
-    }
-  }
-
-  pub fn blue() -> Self {
-    Self {
-      diffuse_color: MdrColor {
-        r: 0.0,
-        g: 0.0,
-        b: 0.8,
-      },
-      alpha: 1.0,
-      specular_color: MdrColor::white(),
-      shininess: 20.0,
-    }
-  }
-
-  pub fn grey() -> Self {
-    Self {
-      diffuse_color: MdrColor {
-        r: 0.3,
-        g: 0.3,
-        b: 0.3,
-      },
-      alpha: 1.0,
-      specular_color: MdrColor::white(),
-      shininess: 5.0,
+      r: rgb[0],
+      g: rgb[1],
+      b: rgb[2],
     }
   }
 }

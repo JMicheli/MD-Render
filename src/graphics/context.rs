@@ -30,7 +30,7 @@ use crate::{
     pipeline::MdrPipeline,
     shaders::{
       self,
-      basic_vertex_shader::ty::{ObjectPushConstants, SceneDataObject},
+      basic_vertex_shader::ty::{MdrPushConstants, MdrSceneData},
     },
     window::{MdrWindow, MdrWindowOptions},
   },
@@ -333,18 +333,18 @@ impl MdrGraphicsContext {
     for object in scene.scene_objects.iter() {
       // Get handle to the mesh buffers from the resource manager
       let mesh_handle = self.resource_manager.get_mesh_handle(&object.mesh);
-      // Upload object's material data
-      let material_buffer = object.material.upload_to_gpu(logical_device);
+      // Get handle to the material buffer from the resource manager
+      let material_handle = self.resource_manager.get_material_handle(&object.material);
 
       // Upload object's world transform as a push constant
-      let push_constants = ObjectPushConstants {
+      let push_constants = MdrPushConstants {
         transformation_matrix: object.transform.matrix().into(),
       };
 
       // Bind vertex data
       builder
-        .bind_vertex_buffers(0, mesh_handle.vertex_subbuffer.clone())
-        .bind_index_buffer(mesh_handle.index_subbuffer.clone());
+        .bind_vertex_buffers(0, mesh_handle.vertex_chunk.clone())
+        .bind_index_buffer(mesh_handle.index_chunk.clone());
 
       // Upload material data
       // TODO Order by material and bind once per mat
@@ -356,7 +356,10 @@ impl MdrGraphicsContext {
           .get(1)
           .unwrap()
           .clone(),
-        [WriteDescriptorSet::buffer(0, material_buffer.material_data)],
+        [WriteDescriptorSet::buffer(
+          0,
+          material_handle.material_chunk.clone(),
+        )],
       )
       .unwrap();
       builder.bind_descriptor_sets(
@@ -390,7 +393,7 @@ impl MdrGraphicsContext {
   fn upload_scene_data(
     logical_device: &Arc<Device>,
     scene: &MdrScene,
-  ) -> Arc<CpuAccessibleBuffer<SceneDataObject>> {
+  ) -> Arc<CpuAccessibleBuffer<MdrSceneData>> {
     // Camera data
     let view_matrix = scene.camera.get_view_matrix();
     let projection_matrix = scene.camera.get_projection_matrix();
@@ -422,7 +425,7 @@ impl MdrGraphicsContext {
       logical_device.clone(),
       BufferUsage::storage_buffer(),
       false,
-      SceneDataObject {
+      MdrSceneData {
         camera,
         point_lights,
         point_light_count: scene.lights.get_count(),
