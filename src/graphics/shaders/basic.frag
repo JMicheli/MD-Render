@@ -84,17 +84,20 @@ vec3 calculate_point_light_contribution(PointLightData light, vec3 specular_stre
   // Blinn-Phong halfway vector
   vec3 H = normalize(L + V);
 
+  // Light color adjusted by brightness
+  vec3 light_color = light.color * light.brightness;
+
   // Blinn-Phong BRDF
   // Ambient contribution
-  vec3 ambient = ambient_strength * light.color;
+  vec3 ambient = ambient_strength * light_color;
   
   // Diffuse contribution
   float diffusion_coefficient = max(dot(N, L), 0.0);
-  vec3 diffuse = diffusion_coefficient * light.color;
+  vec3 diffuse = diffusion_coefficient * light_color;
 
   // Specular contribution
   float specular_coefficient = pow(max(dot(N, H), 0.0), material.shininess);
-  vec3 specular = specular_strength * light.color * specular_coefficient ;
+  vec3 specular = specular_strength * light_color * specular_coefficient ;
 
   return (ambient + diffuse + specular);
 }

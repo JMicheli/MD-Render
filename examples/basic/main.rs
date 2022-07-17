@@ -203,8 +203,8 @@ fn main() {
   ground_plane.transform.translation.set(0.0, 1.0, 0.0);
   engine.scene.add_object(ground_plane);
 
-  // Add first white light
-  let mut white_light = MdrLight::white(1.0);
+  // Add white light
+  let mut white_light = MdrLight::white(5.0);
   white_light.translation.set(1.0, 3.0, 3.0);
   engine.scene.lights.add_light(white_light);
 
