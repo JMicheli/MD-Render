@@ -316,7 +316,17 @@ impl MdrResourceManager {
       shininess: material_create_info.shininess,
     };
 
+    // Get maps from texture library
     let diffuse_map = match self.texture_library.get(&material_create_info.diffuse.name) {
+      Some(texture) => texture.clone(),
+      None => {
+        return Err(MdrResourceError::TextureNotFound);
+      }
+    };
+    let roughness_map = match self
+      .texture_library
+      .get(&material_create_info.roughness.name)
+    {
       Some(texture) => texture.clone(),
       None => {
         return Err(MdrResourceError::TextureNotFound);
@@ -324,7 +334,7 @@ impl MdrResourceManager {
     };
 
     // Push material to GPU and store in library
-    let material_handle = self.upload_material_to_gpu(material, diffuse_map);
+    let material_handle = self.upload_material_to_gpu(material, diffuse_map, roughness_map);
     self
       .material_library
       .insert(String::from(name), material_handle);
@@ -376,17 +386,6 @@ impl MdrResourceManager {
       Some((_, handle)) => handle,
       None => {
         panic!("Could not find mesh {} in mesh library", mesh.name);
-      }
-    }
-  }
-
-  /// Gets a reference to the `MdrGpuTextureHandle` that corresponds to the input `MdrTexture`.
-  /// This is called when building the render command buffer to bind the underlying buffers.
-  pub(crate) fn get_texture_handle(&self, texture: &MdrTexture) -> &MdrGpuTextureHandle {
-    match self.texture_library.get_key_value(&texture.name) {
-      Some((_, handle)) => handle,
-      None => {
-        panic!("Could not find texture {} in texture library", texture.name);
       }
     }
   }
@@ -478,12 +477,17 @@ impl MdrResourceManager {
   /// Returns an `MdrGpuMaterialHandle` containing the resulting buffer.
   fn upload_material_to_gpu(
     &mut self,
-    material: MdrMaterialUniformData,
+    material_uniforms: MdrMaterialUniformData,
     diffuse_map: MdrGpuTextureHandle,
+    roughness_map: MdrGpuTextureHandle,
   ) -> MdrGpuMaterialHandle {
     MdrGpuMaterialHandle {
-      material_data: self.material_buffer_pool.chunk([material]).unwrap(),
+      material_data: self
+        .material_buffer_pool
+        .chunk([material_uniforms])
+        .unwrap(),
       diffuse_map,
+      roughness_map,
     }
   }
 
@@ -496,6 +500,7 @@ impl MdrResourceManager {
     }
 
     // If not, we need to create one
+    // TODO We should probably put this in its own resource
     let sampler = Sampler::new(
       self.logical_device.clone(),
       SamplerCreateInfo {

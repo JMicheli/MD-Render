@@ -37,18 +37,20 @@ layout(set = 1, binding = 0) uniform MdrMaterialUniformData {
   vec3 specular_color;
   float shininess;
 } material;
-
+// Base color of material
 layout(set = 1, binding = 1) uniform sampler2D diffuse_map;
+// Roughness map for material
+layout(set = 1, binding = 2) uniform sampler2D roughness_map;
+
 
 ///////////////////////
 //TODO Remove test code
 ///////////////////////
 const float ambient_strength = 0.1;
-const float specular_strength = 0.5;
 
 // Lighting functions
 /////////////////////
-vec3 calculate_point_light_contribution(PointLightData light, vec3 N, vec3 V);
+vec3 calculate_point_light_contribution(PointLightData light, vec3 specular_strength, vec3 N, vec3 V);
 
 // Shader Entry Point
 /////////////////////
@@ -61,10 +63,12 @@ void main() {
 
   // Sample diffuse map to get color
   vec4 diffuse_color = texture(diffuse_map, v_uv);
+  // Sample specular map to get specular strength
+  vec3 specular_strength = vec3(1.0) - texture(roughness_map, v_uv).xyx;
 
   vec3 result = vec3(0.0);
   for (int i = 0; i < scene_data.point_light_count; i++) {
-    result += calculate_point_light_contribution(scene_data.point_lights[i], N, V) * diffuse_color.xyz;
+    result += calculate_point_light_contribution(scene_data.point_lights[i], specular_strength, N, V) * diffuse_color.xyz;
   }
 
   f_color = vec4(result, diffuse_color.w);
@@ -73,7 +77,7 @@ void main() {
 // Impl lighting functions
 //////////////////////////
 
-vec3 calculate_point_light_contribution(PointLightData light, vec3 N, vec3 V) {
+vec3 calculate_point_light_contribution(PointLightData light, vec3 specular_strength, vec3 N, vec3 V) {
   // Light-specific direction vectors
   // Direction to light
   vec3 L = normalize(light.position - v_position);
@@ -90,7 +94,7 @@ vec3 calculate_point_light_contribution(PointLightData light, vec3 N, vec3 V) {
 
   // Specular contribution
   float specular_coefficient = pow(max(dot(N, H), 0.0), material.shininess);
-  vec3 specular = specular_strength * specular_coefficient * light.color;
+  vec3 specular = specular_strength * light.color * specular_coefficient ;
 
   return (ambient + diffuse + specular);
 }

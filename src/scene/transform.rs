@@ -48,6 +48,12 @@ impl MdrTranslation {
     self.z = z;
   }
 
+  pub fn translate_by(&mut self, x: f32, y: f32, z: f32) {
+    self.x += x;
+    self.y += y;
+    self.z += z;
+  }
+
   pub const fn identity() -> Self {
     Self {
       x: 0.0,

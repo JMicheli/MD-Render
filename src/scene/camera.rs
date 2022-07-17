@@ -1,4 +1,4 @@
-use nalgebra::{Matrix4, Perspective3};
+use nalgebra::{Matrix4, Perspective3, Vector3, Vector4};
 
 use super::transform::MdrTransform;
 
@@ -28,6 +28,30 @@ impl MdrCamera {
       self.far_plane,
     )
     .to_homogeneous()
+  }
+
+  pub fn get_forward_vector(&self) -> Vector3<f32> {
+    let local_forward_vector: Vector4<f32> = Vector4::<f32>::new(0.0, 0.0, 1.0, 1.0);
+    let world_forward_vector: Vector4<f32> =
+      self.transform.rotation.inverse_matrix() * local_forward_vector;
+
+    Vector3::new(
+      world_forward_vector.x,
+      world_forward_vector.y,
+      world_forward_vector.z,
+    )
+  }
+
+  pub fn get_sideways_vector(&self) -> Vector3<f32> {
+    let local_sideways_vector: Vector4<f32> = Vector4::<f32>::new(1.0, 0.0, 0.0, 1.0);
+    let world_sideways_vector: Vector4<f32> =
+      self.transform.rotation.inverse_matrix() * local_sideways_vector;
+
+    Vector3::new(
+      world_sideways_vector.x,
+      world_sideways_vector.y,
+      world_sideways_vector.z,
+    )
   }
 }
 

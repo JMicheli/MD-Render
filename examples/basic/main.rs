@@ -58,6 +58,17 @@ fn main() {
       "metal_plates_base_color",
     )
     .unwrap();
+  let metal_plates_roughness = engine
+    .manage_resources()
+    .load_texture(
+      MdrTextureCreateInfo {
+        source: asset("textures/metal_plates/roughness.png").as_str(),
+        color_type: MdrColorType::SRGBA,
+        sampler_mode: MdrSamplerMode::Repeat,
+      },
+      "metal_plates_roughness",
+    )
+    .unwrap();
   let blue_tiles_base_color = engine
     .manage_resources()
     .load_texture(
@@ -67,6 +78,17 @@ fn main() {
         sampler_mode: MdrSamplerMode::Repeat,
       },
       "blue_tiles_base_color",
+    )
+    .unwrap();
+  let blue_tiles_roughness = engine
+    .manage_resources()
+    .load_texture(
+      MdrTextureCreateInfo {
+        source: asset("textures/blue_tiles/roughness.png").as_str(),
+        color_type: MdrColorType::SRGBA,
+        sampler_mode: MdrSamplerMode::Repeat,
+      },
+      "blue_tiles_roughness",
     )
     .unwrap();
   let stylized_wood_base_color = engine
@@ -80,6 +102,17 @@ fn main() {
       "stylized_wood_base_color",
     )
     .unwrap();
+  let stylized_wood_roughness = engine
+    .manage_resources()
+    .load_texture(
+      MdrTextureCreateInfo {
+        source: asset("textures/stylized_wood/roughness.jpg").as_str(),
+        color_type: MdrColorType::SRGBA,
+        sampler_mode: MdrSamplerMode::Repeat,
+      },
+      "stylized_wood_roughness",
+    )
+    .unwrap();
   let red_fabric_base_color = engine
     .manage_resources()
     .load_texture(
@@ -91,6 +124,17 @@ fn main() {
       "red_fabric_base_color",
     )
     .unwrap();
+  let red_fabric_roughness = engine
+    .manage_resources()
+    .load_texture(
+      MdrTextureCreateInfo {
+        source: asset("textures/red_fabric/roughness.png").as_str(),
+        color_type: MdrColorType::SRGBA,
+        sampler_mode: MdrSamplerMode::Repeat,
+      },
+      "red_fabric_roughness",
+    )
+    .unwrap();
 
   // Create object materials
   let monkey_mat = engine
@@ -98,6 +142,7 @@ fn main() {
     .create_material(
       MdrMaterialCreateInfo {
         diffuse: red_fabric_base_color,
+        roughness: red_fabric_roughness,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
@@ -109,6 +154,7 @@ fn main() {
     .create_material(
       MdrMaterialCreateInfo {
         diffuse: blue_tiles_base_color,
+        roughness: blue_tiles_roughness,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
@@ -120,6 +166,7 @@ fn main() {
     .create_material(
       MdrMaterialCreateInfo {
         diffuse: metal_plates_base_color,
+        roughness: metal_plates_roughness,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
@@ -131,6 +178,7 @@ fn main() {
     .create_material(
       MdrMaterialCreateInfo {
         diffuse: stylized_wood_base_color,
+        roughness: stylized_wood_roughness,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
@@ -164,16 +212,40 @@ fn main() {
   engine.set_update_function(Box::new(|scene, input_state, dt| {
     // Camera WASD movement
     if input_state.w {
-      scene.camera.transform.translation.z += dt * CAMERA_MOV_SPEED;
+      let move_magnitude = dt * CAMERA_MOV_SPEED;
+      let move_vector = scene.camera.get_forward_vector() * move_magnitude;
+      scene
+        .camera
+        .transform
+        .translation
+        .translate_by(move_vector.x, 0.0, move_vector.z);
     }
     if input_state.d {
-      scene.camera.transform.translation.x += dt * -CAMERA_MOV_SPEED;
+      let move_magnitude = dt * -CAMERA_MOV_SPEED;
+      let move_vector = scene.camera.get_sideways_vector() * move_magnitude;
+      scene
+        .camera
+        .transform
+        .translation
+        .translate_by(move_vector.x, 0.0, move_vector.z);
     }
     if input_state.a {
-      scene.camera.transform.translation.x += dt * CAMERA_MOV_SPEED;
+      let move_magnitude = dt * CAMERA_MOV_SPEED;
+      let move_vector = scene.camera.get_sideways_vector() * move_magnitude;
+      scene
+        .camera
+        .transform
+        .translation
+        .translate_by(move_vector.x, 0.0, move_vector.z);
     }
     if input_state.s {
-      scene.camera.transform.translation.z += dt * -CAMERA_MOV_SPEED;
+      let move_magnitude = dt * -CAMERA_MOV_SPEED;
+      let move_vector = scene.camera.get_forward_vector() * move_magnitude;
+      scene
+        .camera
+        .transform
+        .translation
+        .translate_by(move_vector.x, 0.0, move_vector.z);
     }
 
     // Light movement with arrow keys

@@ -13,6 +13,7 @@ pub struct MdrMaterial {
 
 pub struct MdrMaterialCreateInfo {
   pub diffuse: MdrTexture,
+  pub roughness: MdrTexture,
 
   pub specular_color: MdrRgb,
   pub shininess: f32,
@@ -22,4 +23,5 @@ pub struct MdrMaterialCreateInfo {
 pub struct MdrGpuMaterialHandle {
   pub(crate) material_data: Arc<CpuBufferPoolChunk<MdrMaterialUniformData, Arc<StdMemoryPool>>>,
   pub(crate) diffuse_map: MdrGpuTextureHandle,
+  pub(crate) roughness_map: MdrGpuTextureHandle,
 }

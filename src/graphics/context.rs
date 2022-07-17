@@ -362,11 +362,19 @@ impl MdrGraphicsContext {
           .unwrap()
           .clone(),
         [
+          // Material uniform data
           WriteDescriptorSet::buffer(0, material_handle.material_data.clone()),
+          // Diffuse map image sampler
           WriteDescriptorSet::image_view_sampler(
             1,
             material_handle.diffuse_map.image_view.clone(),
             material_handle.diffuse_map.sampler.clone(),
+          ),
+          // Roughness map image sampler
+          WriteDescriptorSet::image_view_sampler(
+            2,
+            material_handle.roughness_map.image_view.clone(),
+            material_handle.roughness_map.sampler.clone(),
           ),
         ],
       )
