@@ -2,7 +2,7 @@ use std::env;
 
 use log::info;
 
-use mdr_engine::resources::{MdrColor, MdrMaterialCreateInfo};
+use mdr_engine::resources::{MdrMaterialCreateInfo, MdrRgb};
 use mdr_engine::{
   logger,
   scene::{MdrLight, MdrRenderObject},
@@ -50,9 +50,9 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse_color: MdrColor::from([0.8, 0.0, 0.0]),
+        diffuse_color: MdrRgb::from([0.8, 0.0, 0.0]),
         alpha: 1.0,
-        specular_color: MdrColor::white(),
+        specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
       "monkey_mat",
@@ -62,9 +62,9 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse_color: MdrColor::from([0.0, 0.8, 0.0]),
+        diffuse_color: MdrRgb::from([0.0, 0.8, 0.0]),
         alpha: 1.0,
-        specular_color: MdrColor::white(),
+        specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
       "sphere_mat",
@@ -74,9 +74,9 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse_color: MdrColor::from([0.0, 0.0, 0.8]),
+        diffuse_color: MdrRgb::from([0.0, 0.0, 0.8]),
         alpha: 1.0,
-        specular_color: MdrColor::white(),
+        specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
       "cube_mat",
@@ -86,9 +86,9 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse_color: MdrColor::from([0.4, 0.4, 0.4]),
+        diffuse_color: MdrRgb::from([0.4, 0.4, 0.4]),
         alpha: 1.0,
-        specular_color: MdrColor::white(),
+        specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
       "plane_mat",

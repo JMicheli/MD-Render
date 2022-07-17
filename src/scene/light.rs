@@ -1,8 +1,8 @@
-use crate::{config::MAX_POINT_LIGHTS, resources::MdrColor, scene::transform::MdrTranslation};
+use crate::{config::MAX_POINT_LIGHTS, resources::MdrRgb, scene::transform::MdrTranslation};
 
 #[derive(Clone, Copy)]
 pub struct MdrLight {
-  pub color: MdrColor,
+  pub color: MdrRgb,
   pub brightness: f32,
 
   pub translation: MdrTranslation,
@@ -11,7 +11,7 @@ pub struct MdrLight {
 impl MdrLight {
   pub fn new(r: f32, g: f32, b: f32, brightness: f32) -> Self {
     Self {
-      color: MdrColor { r, g, b },
+      color: MdrRgb { r, g, b },
       brightness,
 
       translation: MdrTranslation::identity(),
@@ -24,7 +24,7 @@ impl MdrLight {
 
   pub const fn unused() -> Self {
     Self {
-      color: MdrColor {
+      color: MdrRgb {
         r: 0.0,
         g: 0.0,
         b: 0.0,

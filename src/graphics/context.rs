@@ -38,7 +38,7 @@ use crate::{
 };
 
 use super::{
-  resource_manager::MdrResourceManager,
+  resources::MdrResourceManager,
   shaders::basic_vertex_shader::ty::{CameraData, PointLightData},
 };
 
