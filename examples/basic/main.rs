@@ -2,7 +2,6 @@ use std::env;
 
 use log::info;
 
-use mdr_engine::resources::color::MdrColor;
 use mdr_engine::resources::texture::{MdrSamplerMode, MdrTextureCreateInfo};
 use mdr_engine::resources::{MdrColorType, MdrMaterialCreateInfo, MdrRgb};
 use mdr_engine::{
@@ -48,28 +47,49 @@ fn main() {
     .unwrap();
 
   // Create textures
-  let test_texture = engine
+  let metal_plates_base_color = engine
     .manage_resources()
     .load_texture(
       MdrTextureCreateInfo {
-        source: asset("textures/test_texture.png").as_str(),
+        source: asset("textures/metal_plates/base_color.png").as_str(),
         color_type: MdrColorType::SRGBA,
         sampler_mode: MdrSamplerMode::Repeat,
       },
-      "test_texture",
+      "metal_plates_base_color",
     )
     .unwrap();
-  let red_texture = engine
+  let blue_tiles_base_color = engine
     .manage_resources()
-    .create_solid_texture(MdrColor::from([0.8, 0.0, 0.0, 1.0]), "red_texture")
+    .load_texture(
+      MdrTextureCreateInfo {
+        source: asset("textures/blue_tiles/base_color.png").as_str(),
+        color_type: MdrColorType::SRGBA,
+        sampler_mode: MdrSamplerMode::Repeat,
+      },
+      "blue_tiles_base_color",
+    )
     .unwrap();
-  let blue_texture = engine
+  let wood_planks_base_color = engine
     .manage_resources()
-    .create_solid_texture(MdrColor::from([0.0, 0.0, 0.8, 1.0]), "blue_texture")
+    .load_texture(
+      MdrTextureCreateInfo {
+        source: asset("textures/wood_planks/base_color.png").as_str(),
+        color_type: MdrColorType::SRGBA,
+        sampler_mode: MdrSamplerMode::Repeat,
+      },
+      "wood_planks_base_color",
+    )
     .unwrap();
-  let grey_texture = engine
+  let red_fabric_base_color = engine
     .manage_resources()
-    .create_solid_texture(MdrColor::from([0.4, 0.4, 0.4, 1.0]), "grey_texture")
+    .load_texture(
+      MdrTextureCreateInfo {
+        source: asset("textures/red_fabric/base_color.png").as_str(),
+        color_type: MdrColorType::SRGBA,
+        sampler_mode: MdrSamplerMode::Repeat,
+      },
+      "red_fabric_base_color",
+    )
     .unwrap();
 
   // Create object materials
@@ -77,7 +97,7 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse: test_texture,
+        diffuse: red_fabric_base_color,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
@@ -88,7 +108,7 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse: blue_texture,
+        diffuse: blue_tiles_base_color,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
@@ -99,7 +119,7 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse: red_texture,
+        diffuse: metal_plates_base_color,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
@@ -110,7 +130,7 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse: grey_texture,
+        diffuse: wood_planks_base_color,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
