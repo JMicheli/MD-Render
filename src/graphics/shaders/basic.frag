@@ -8,6 +8,7 @@
 ////////////////
 layout(location = 0) in vec3 v_position;
 layout(location = 1) in vec3 v_normal;
+layout(location = 2) in vec2 v_uv;
 
 layout(location = 0) out vec4 f_color;
 
@@ -33,12 +34,11 @@ layout(set = 0, binding = 0) buffer MdrSceneData {
 } scene_data;
 
 layout(set = 1, binding = 0) uniform MdrMaterialUniformData {
-  vec3 diffuse_color;
-  float alpha;
-
   vec3 specular_color;
   float shininess;
 } material;
+
+layout(set = 1, binding = 1) uniform sampler2D diffuse_map;
 
 ///////////////////////
 //TODO Remove test code
@@ -59,12 +59,15 @@ void main() {
   // Direction to viewer
   vec3 V = normalize(scene_data.camera.position - v_position);
 
+  // Sample diffuse map to get color
+  vec4 diffuse_color = texture(diffuse_map, v_uv);
+
   vec3 result = vec3(0.0);
   for (int i = 0; i < scene_data.point_light_count; i++) {
-    result += calculate_point_light_contribution(scene_data.point_lights[i], N, V) * material.diffuse_color;
+    result += calculate_point_light_contribution(scene_data.point_lights[i], N, V) * diffuse_color.xyz;
   }
 
-  f_color = vec4(result, material.alpha);
+  f_color = vec4(result, diffuse_color.w);
 }
 
 // Impl lighting functions

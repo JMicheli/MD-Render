@@ -18,6 +18,7 @@ pub struct MdrTextureCreateInfo<'a> {
   pub sampler_mode: MdrSamplerMode,
 }
 
+#[derive(Clone)]
 pub struct MdrGpuTextureHandle {
   pub(crate) image_view: Arc<ImageView<ImmutableImage>>,
   pub(crate) sampler: Arc<Sampler>,

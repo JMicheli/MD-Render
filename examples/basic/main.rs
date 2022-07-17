@@ -2,7 +2,9 @@ use std::env;
 
 use log::info;
 
-use mdr_engine::resources::{MdrMaterialCreateInfo, MdrRgb};
+use mdr_engine::resources::color::MdrColor;
+use mdr_engine::resources::texture::{MdrSamplerMode, MdrTextureCreateInfo};
+use mdr_engine::resources::{MdrColorType, MdrMaterialCreateInfo, MdrRgb};
 use mdr_engine::{
   logger,
   scene::{MdrLight, MdrRenderObject},
@@ -45,13 +47,37 @@ fn main() {
     .load_mesh_obj(asset("meshes/plane.obj").as_str(), "plane")
     .unwrap();
 
+  // Create textures
+  let test_texture = engine
+    .manage_resources()
+    .load_texture(
+      MdrTextureCreateInfo {
+        source: asset("textures/test_texture.png").as_str(),
+        color_type: MdrColorType::SRGBA,
+        sampler_mode: MdrSamplerMode::Repeat,
+      },
+      "test_texture",
+    )
+    .unwrap();
+  let red_texture = engine
+    .manage_resources()
+    .create_solid_texture(MdrColor::from([0.8, 0.0, 0.0, 1.0]), "red_texture")
+    .unwrap();
+  let blue_texture = engine
+    .manage_resources()
+    .create_solid_texture(MdrColor::from([0.0, 0.0, 0.8, 1.0]), "blue_texture")
+    .unwrap();
+  let grey_texture = engine
+    .manage_resources()
+    .create_solid_texture(MdrColor::from([0.4, 0.4, 0.4, 1.0]), "grey_texture")
+    .unwrap();
+
   // Create object materials
   let monkey_mat = engine
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse_color: MdrRgb::from([0.8, 0.0, 0.0]),
-        alpha: 1.0,
+        diffuse: test_texture,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
@@ -62,8 +88,7 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse_color: MdrRgb::from([0.0, 0.8, 0.0]),
-        alpha: 1.0,
+        diffuse: blue_texture,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
@@ -74,8 +99,7 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse_color: MdrRgb::from([0.0, 0.0, 0.8]),
-        alpha: 1.0,
+        diffuse: red_texture,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
@@ -86,8 +110,7 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse_color: MdrRgb::from([0.4, 0.4, 0.4]),
-        alpha: 1.0,
+        diffuse: grey_texture,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },

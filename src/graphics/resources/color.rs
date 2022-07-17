@@ -1,3 +1,20 @@
+pub enum MdrColor {
+  RGB(MdrRgb),
+  RGBA(MdrRgba),
+}
+
+impl From<[f32; 3]> for MdrColor {
+  fn from(rgb: [f32; 3]) -> Self {
+    Self::RGB(MdrRgb::from(rgb))
+  }
+}
+
+impl From<[f32; 4]> for MdrColor {
+  fn from(rgba: [f32; 4]) -> Self {
+    Self::RGBA(MdrRgba::from(rgba))
+  }
+}
+
 #[derive(Copy, Clone)]
 pub struct MdrRgb {
   pub r: f32,
@@ -63,6 +80,7 @@ impl From<[f32; 3]> for MdrRgb {
   }
 }
 
+#[derive(Copy, Clone)]
 pub struct MdrRgba {
   pub r: f32,
   pub g: f32,
@@ -97,4 +115,13 @@ pub enum MdrColorType {
 
   /// Raw RGB value data not intended to be directly rendered to a viewer.
   NonColorData,
+}
+
+impl From<MdrColor> for MdrColorType {
+  fn from(color: MdrColor) -> Self {
+    match color {
+      MdrColor::RGB(_) => Self::SRGB,
+      MdrColor::RGBA(_) => Self::SRGBA,
+    }
+  }
 }

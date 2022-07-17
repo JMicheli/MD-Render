@@ -4,9 +4,11 @@
 ////////////////
 layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec3 a_normal;
+layout(location = 2) in vec2 a_uv;
 
 layout(location = 0) out vec3 v_position;
 layout(location = 1) out vec3 v_normal;
+layout(location = 2) out vec2 v_uv;
 
 // Input buffer objects
 ///////////////////////
@@ -43,6 +45,9 @@ void main() {
   // Calculate surface normal at input vertex
   // TODO fix to use transpose inverse
   v_normal = normalize(mat3(scene_data.camera.view) * a_normal);
+
+  // Write output UVs
+  v_uv = a_uv;
   
   // Write output of vertex position
   v_position = world_position.xyz;

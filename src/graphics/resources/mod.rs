@@ -5,7 +5,7 @@ pub mod texture;
 pub mod vertex;
 
 use fxhash::{FxBuildHasher, FxHashMap};
-use image::{io::Reader as ImageReader, DynamicImage};
+use image::{io::Reader as ImageReader, DynamicImage, ImageBuffer, Rgb, Rgba};
 use log::{debug, error, warn};
 use std::{collections::HashMap, sync::Arc};
 use vulkano::{
@@ -26,7 +26,10 @@ pub use mesh::{MdrGpuMeshHandle, MdrMesh, MdrMeshData};
 pub use texture::{MdrGpuTextureHandle, MdrTexture};
 pub use vertex::MdrVertex;
 
-use self::texture::{MdrSamplerMode, MdrTextureCreateInfo};
+use self::{
+  color::MdrColor,
+  texture::{MdrSamplerMode, MdrTextureCreateInfo},
+};
 
 /// Manages resources on the GPU by storing meshes, textures, and materials into libraries which
 /// can be accessed by key. Objects in the scene only store these keys rather than maintaining
@@ -119,15 +122,18 @@ impl MdrResourceManager {
     let positions = &model.mesh.positions;
     let indices = &model.mesh.indices;
     let normals = &model.mesh.normals;
+    let tex_coords = &model.mesh.texcoords;
 
     // Loop over vertices
     let vertex_count = positions.len() / 3;
     let mut vertices = Vec::with_capacity(vertex_count);
     for vertex_index in 0..vertex_count {
       let index = 3 * vertex_index;
+      let index_2d = 2 * vertex_index;
       vertices.push(MdrVertex {
         a_position: [positions[index], positions[index + 1], positions[index + 2]],
         a_normal: [normals[index], normals[index + 1], normals[index + 2]],
+        a_uv: [tex_coords[index_2d], tex_coords[index_2d + 1]],
       });
     }
 
@@ -139,6 +145,7 @@ impl MdrResourceManager {
 
     let mesh_handle = self.upload_mesh_to_gpu(mesh);
     self.mesh_library.insert(String::from(name), mesh_handle);
+    debug!("Added {} to mesh library", name);
 
     Ok(MdrMesh {
       name: String::from(name),
@@ -175,6 +182,8 @@ impl MdrResourceManager {
   // Texture handling
   // ////////////////
 
+  /// Loads the texture specified in the input `texture_create_info` and stores it
+  /// in the texture library for later use.
   pub fn load_texture(
     &mut self,
     texture_create_info: MdrTextureCreateInfo,
@@ -197,6 +206,61 @@ impl MdrResourceManager {
     self
       .texture_library
       .insert(String::from(name), texture_handle);
+    debug!("Added {} to texture library", name);
+
+    Ok(MdrTexture {
+      name: String::from(name),
+    })
+  }
+
+  /// Creates a single-pixel texture with the input `MdrColor` and stores it in the texture library
+  /// for later use.
+  pub fn create_solid_texture(
+    &mut self,
+    color: MdrColor,
+    name: &str,
+  ) -> Result<MdrTexture, MdrResourceError> {
+    // Check that the texture name isn't already in use
+    if self.texture_library.contains_key(name) {
+      error!("Texture library already contains name: {}", name);
+      return Err(MdrResourceError::DuplicateTextureName);
+    }
+
+    let image = match color {
+      MdrColor::RGB(rgb) => {
+        let rgb_u8 = [
+          (rgb.r * 255.0) as u8,
+          (rgb.g * 255.0) as u8,
+          (rgb.b * 255.0) as u8,
+        ];
+        let image_buffer = ImageBuffer::from_fn(1, 1, |_, _| Rgb(rgb_u8));
+        DynamicImage::ImageRgb8(image_buffer)
+      }
+      MdrColor::RGBA(rgba) => {
+        let rgba_u8 = [
+          (rgba.r * 255.0) as u8,
+          (rgba.g * 255.0) as u8,
+          (rgba.b * 255.0) as u8,
+          (rgba.a * 255.0) as u8,
+        ];
+        let image_buffer = ImageBuffer::from_fn(1, 1, |_, _| Rgba(rgba_u8));
+        DynamicImage::ImageRgba8(image_buffer)
+      }
+    };
+
+    // Upload to GPU and catalogue texture in library
+    let texture_handle = self.upload_image_to_gpu(
+      image,
+      MdrTextureCreateInfo {
+        source: "",
+        color_type: MdrColorType::from(color),
+        sampler_mode: MdrSamplerMode::ClampToEdge,
+      },
+    );
+    self
+      .texture_library
+      .insert(String::from(name), texture_handle);
+    debug!("Added {} to texture library", name);
 
     Ok(MdrTexture {
       name: String::from(name),
@@ -233,6 +297,8 @@ impl MdrResourceManager {
   // Material handling
   // /////////////////
 
+  /// Creates a material wih the input `material_create_info` and stores it in the material
+  /// library under the key `name` for future use.
   pub fn create_material(
     &mut self,
     material_create_info: MdrMaterialCreateInfo,
@@ -246,18 +312,23 @@ impl MdrResourceManager {
 
     // Generate material uniform buffer contents from create info
     let material = MdrMaterialUniformData {
-      diffuse_color: material_create_info.diffuse_color.into(),
-      alpha: material_create_info.alpha,
-
       specular_color: material_create_info.specular_color.into(),
       shininess: material_create_info.shininess,
     };
 
+    let diffuse_map = match self.texture_library.get(&material_create_info.diffuse.name) {
+      Some(texture) => texture.clone(),
+      None => {
+        return Err(MdrResourceError::TextureNotFound);
+      }
+    };
+
     // Push material to GPU and store in library
-    let material_handle = self.upload_material_to_gpu(material);
+    let material_handle = self.upload_material_to_gpu(material, diffuse_map);
     self
       .material_library
       .insert(String::from(name), material_handle);
+    debug!("Added {} to material library", name);
 
     Ok(MdrMaterial {
       name: String::from(name),
@@ -293,6 +364,10 @@ impl MdrResourceManager {
   // //////////////////
   // Internal functions
   // //////////////////
+
+  pub(crate) fn take_upload_futures(&mut self) -> Option<Box<dyn GpuFuture>> {
+    self.texture_load_futures.take()
+  }
 
   /// Gets a reference to the `MdrGpuMeshHandle` that corresponds to the input `MdrMesh`.
   /// This is called when building the render command buffer to bind the underlying buffers.
@@ -401,9 +476,14 @@ impl MdrResourceManager {
 
   /// Uploads an input `MdrMaterialUniformData` to the GPU .
   /// Returns an `MdrGpuMaterialHandle` containing the resulting buffer.
-  fn upload_material_to_gpu(&mut self, material: MdrMaterialUniformData) -> MdrGpuMaterialHandle {
+  fn upload_material_to_gpu(
+    &mut self,
+    material: MdrMaterialUniformData,
+    diffuse_map: MdrGpuTextureHandle,
+  ) -> MdrGpuMaterialHandle {
     MdrGpuMaterialHandle {
-      material_chunk: self.material_buffer_pool.chunk([material]).unwrap(),
+      material_data: self.material_buffer_pool.chunk([material]).unwrap(),
+      diffuse_map,
     }
   }
 
@@ -431,7 +511,8 @@ impl MdrResourceManager {
     .unwrap();
 
     // Map the new sampler and return it
-    self.sampler_palette.insert(sampler_mode, sampler).unwrap()
+    self.sampler_palette.insert(sampler_mode, sampler.clone());
+    sampler
   }
 
   fn join_texture_future(

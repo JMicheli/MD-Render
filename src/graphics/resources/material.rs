@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use vulkano::{buffer::cpu_pool::CpuBufferPoolChunk, memory::pool::StdMemoryPool};
 
-use super::color::MdrRgb;
+use super::{color::MdrRgb, MdrGpuTextureHandle, MdrTexture};
 
 pub use crate::graphics::shaders::basic_fragment_shader::ty::MdrMaterialUniformData;
 
@@ -12,13 +12,14 @@ pub struct MdrMaterial {
 }
 
 pub struct MdrMaterialCreateInfo {
-  pub diffuse_color: MdrRgb,
-  pub alpha: f32,
+  pub diffuse: MdrTexture,
 
   pub specular_color: MdrRgb,
   pub shininess: f32,
 }
 
+#[derive(Clone)]
 pub struct MdrGpuMaterialHandle {
-  pub(crate) material_chunk: Arc<CpuBufferPoolChunk<MdrMaterialUniformData, Arc<StdMemoryPool>>>,
+  pub(crate) material_data: Arc<CpuBufferPoolChunk<MdrMaterialUniformData, Arc<StdMemoryPool>>>,
+  pub(crate) diffuse_map: MdrGpuTextureHandle,
 }

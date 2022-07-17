@@ -185,11 +185,16 @@ impl MdrGraphicsContext {
       self.should_recreate_swapchain = true;
     }
 
-    // Get last frame's end-of-command future and clean it up
+    // Get last frame's end-of-command future (or present moment if no frame waiting)
     let mut previous_frame_end = match self.frame_futures[self.previous_frame_index].take() {
-      Some(value) => value,
+      Some(future) => future,
       None => sync::now(self.logical_device.clone()).boxed(),
     };
+    // If we're waiting for any resources to load, chain that in
+    if let Some(resource_future) = self.resource_manager.take_upload_futures() {
+      previous_frame_end = previous_frame_end.join(resource_future).boxed();
+    }
+    // Clean up lingering finished futures
     previous_frame_end.cleanup_finished();
 
     let command_buffer = self.create_command_buffer(
@@ -356,10 +361,14 @@ impl MdrGraphicsContext {
           .get(1)
           .unwrap()
           .clone(),
-        [WriteDescriptorSet::buffer(
-          0,
-          material_handle.material_chunk.clone(),
-        )],
+        [
+          WriteDescriptorSet::buffer(0, material_handle.material_data.clone()),
+          WriteDescriptorSet::image_view_sampler(
+            1,
+            material_handle.diffuse_map.image_view.clone(),
+            material_handle.diffuse_map.sampler.clone(),
+          ),
+        ],
       )
       .unwrap();
       builder.bind_descriptor_sets(
