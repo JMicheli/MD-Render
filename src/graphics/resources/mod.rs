@@ -4,7 +4,8 @@ pub mod mesh;
 pub mod texture;
 pub mod vertex;
 
-use image::{io::Reader as ImageReader, ColorType, DynamicImage};
+use fxhash::{FxBuildHasher, FxHashMap};
+use image::{io::Reader as ImageReader, DynamicImage};
 use log::{debug, error, warn};
 use std::{collections::HashMap, sync::Arc};
 use vulkano::{
@@ -12,10 +13,7 @@ use vulkano::{
   command_buffer::{CommandBufferExecFuture, PrimaryAutoCommandBuffer},
   device::{Device, Queue},
   format::Format,
-  image::{
-    view::ImageView, ImageCreateFlags, ImageDimensions, ImageLayout, ImageUsage, ImmutableImage,
-    MipmapsCount,
-  },
+  image::{view::ImageView, ImageDimensions, ImmutableImage, MipmapsCount},
   sampler::{Filter, Sampler, SamplerAddressMode, SamplerCreateInfo},
   sync::{GpuFuture, NowFuture},
 };
@@ -30,20 +28,23 @@ pub use vertex::MdrVertex;
 
 use self::texture::{MdrSamplerMode, MdrTextureCreateInfo};
 
+/// Manages resources on the GPU by storing meshes, textures, and materials into libraries which
+/// can be accessed by key. Objects in the scene only store these keys rather than maintaining
+/// references to the buffers in which their data is stored.
 pub struct MdrResourceManager {
   logical_device: Arc<Device>,
   queue: Arc<Queue>,
 
   vertex_buffer_pool: CpuBufferPool<MdrVertex>,
   index_buffer_pool: CpuBufferPool<u32>,
-  mesh_library: HashMap<String, MdrGpuMeshHandle>,
+  mesh_library: HashMap<String, MdrGpuMeshHandle, FxBuildHasher>,
 
   material_buffer_pool: CpuBufferPool<MdrMaterialUniformData>,
-  material_library: HashMap<String, MdrGpuMaterialHandle>,
+  material_library: HashMap<String, MdrGpuMaterialHandle, FxBuildHasher>,
 
   texture_load_futures: Option<Box<dyn GpuFuture>>,
-  sampler_palette: HashMap<MdrSamplerMode, Arc<Sampler>>,
-  texture_library: HashMap<String, MdrGpuTextureHandle>,
+  sampler_palette: HashMap<MdrSamplerMode, Arc<Sampler>, FxBuildHasher>,
+  texture_library: HashMap<String, MdrGpuTextureHandle, FxBuildHasher>,
 }
 
 impl MdrResourceManager {
@@ -53,17 +54,17 @@ impl MdrResourceManager {
       CpuBufferPool::<MdrVertex>::new(logical_device.clone(), BufferUsage::vertex_buffer());
     let index_buffer_pool =
       CpuBufferPool::<u32>::new(logical_device.clone(), BufferUsage::index_buffer());
-    let mesh_library = HashMap::<String, MdrGpuMeshHandle>::new();
+    let mesh_library = FxHashMap::<String, MdrGpuMeshHandle>::default();
 
     // Material memory handler initialization
     let material_buffer_pool = CpuBufferPool::<MdrMaterialUniformData>::new(
       logical_device.clone(),
       BufferUsage::uniform_buffer(),
     );
-    let material_library = HashMap::<String, MdrGpuMaterialHandle>::new();
+    let material_library = FxHashMap::<String, MdrGpuMaterialHandle>::default();
 
-    let sampler_palette = HashMap::<MdrSamplerMode, Arc<Sampler>>::new();
-    let texture_library = HashMap::<String, MdrGpuTextureHandle>::new();
+    let sampler_palette = FxHashMap::<MdrSamplerMode, Arc<Sampler>>::default();
+    let texture_library = FxHashMap::<String, MdrGpuTextureHandle>::default();
 
     Self {
       logical_device,
@@ -82,10 +83,13 @@ impl MdrResourceManager {
     }
   }
 
-  /// /////////////
-  /// Mesh handling
-  /// /////////////
+  // /////////////
+  // Mesh handling
+  // /////////////
 
+  /// Load a mesh from an .obj file into the mesh library with a given name.
+  /// `path` specifies a path to the .obj file.
+  /// `name` is the name given to the mesh in the mesh library.
   pub fn load_mesh_obj<'a>(
     &mut self,
     path: &str,
@@ -141,6 +145,8 @@ impl MdrResourceManager {
     })
   }
 
+  /// Returns an `MdrMesh` specified by `name` from the mesh library. If no match is found for the
+  /// key, it returns `MdrResourceError::MeshNotFound`.
   pub fn retrieve_mesh(&self, name: &str) -> Result<MdrMesh, MdrResourceError> {
     if !self.mesh_library.contains_key(name) {
       return Err(MdrResourceError::MeshNotFound);
@@ -151,6 +157,8 @@ impl MdrResourceManager {
     })
   }
 
+  /// Removes the mesh specified by `name` from the mesh library and drops it, freeing it
+  /// from GPU memory. Doing this will effectively invalidate any existing `MdrMesh` objects.
   pub fn unload_mesh(&mut self, name: &str) {
     if !self.mesh_library.contains_key(name) {
       warn!(
@@ -163,9 +171,9 @@ impl MdrResourceManager {
     self.mesh_library.remove(&String::from(name));
   }
 
-  /// ////////////////
-  /// Texture handling
-  /// ////////////////
+  // ////////////////
+  // Texture handling
+  // ////////////////
 
   pub fn load_texture(
     &mut self,
@@ -195,6 +203,8 @@ impl MdrResourceManager {
     })
   }
 
+  /// Returns an `MdrTexture` specified by `name` from the texture library. If no match is found for the
+  /// key, it returns `MdrResourceError::TextureNotFound`.
   pub fn retrieve_texture(&self, name: &str) -> Result<MdrTexture, MdrResourceError> {
     if !self.texture_library.contains_key(name) {
       return Err(MdrResourceError::TextureNotFound);
@@ -205,6 +215,8 @@ impl MdrResourceManager {
     })
   }
 
+  /// Removes the texture specified by `name` from the texture library and drops it, freeing it
+  /// from GPU memory. Doing this will effectively invalidate any existing `MdrTexture` objects.
   pub fn unload_texture(&mut self, name: &str) {
     if !self.texture_library.contains_key(name) {
       warn!(
@@ -217,9 +229,9 @@ impl MdrResourceManager {
     self.texture_library.remove(&String::from(name));
   }
 
-  /// /////////////////
-  /// Material handling
-  /// /////////////////
+  // /////////////////
+  // Material handling
+  // /////////////////
 
   pub fn create_material(
     &mut self,
@@ -252,6 +264,8 @@ impl MdrResourceManager {
     })
   }
 
+  /// Returns an `MdrMaterial` specified by `name` from the material library. If no match is found for the
+  /// key, it returns `MdrResourceError::MaterialNotFound`.
   pub fn retrieve_material(&self, name: &str) -> Result<MdrMaterial, MdrResourceError> {
     if !self.material_library.contains_key(name) {
       return Err(MdrResourceError::MaterialNotFound);
@@ -262,6 +276,8 @@ impl MdrResourceManager {
     })
   }
 
+  /// Removes the material specified by `name` from the material library and drops it, freeing it
+  /// from GPU memory. Doing this will effectively invalidate any existing `MdrMaterial` objects.
   pub fn unload_material(&mut self, name: &str) {
     if !self.material_library.contains_key(name) {
       warn!(
@@ -274,10 +290,12 @@ impl MdrResourceManager {
     self.material_library.remove(&String::from(name));
   }
 
-  /// //////////////////
-  /// Internal functions
-  /// //////////////////
+  // //////////////////
+  // Internal functions
+  // //////////////////
 
+  /// Gets a reference to the `MdrGpuMeshHandle` that corresponds to the input `MdrMesh`.
+  /// This is called when building the render command buffer to bind the underlying buffers.
   pub(crate) fn get_mesh_handle(&self, mesh: &MdrMesh) -> &MdrGpuMeshHandle {
     match self.mesh_library.get_key_value(&mesh.name) {
       Some((_, handle)) => handle,
@@ -287,18 +305,30 @@ impl MdrResourceManager {
     }
   }
 
-  pub(crate) fn get_material_handle(&self, material: &MdrMaterial) -> &MdrGpuMaterialHandle {
-    match self.material_library.get_key_value(&material.name) {
+  /// Gets a reference to the `MdrGpuTextureHandle` that corresponds to the input `MdrTexture`.
+  /// This is called when building the render command buffer to bind the underlying buffers.
+  pub(crate) fn get_texture_handle(&self, texture: &MdrTexture) -> &MdrGpuTextureHandle {
+    match self.texture_library.get_key_value(&texture.name) {
       Some((_, handle)) => handle,
       None => {
-        panic!(
-          "Could not find material {} in material library",
-          material.name
-        );
+        panic!("Could not find texture {} in texture library", texture.name);
       }
     }
   }
 
+  /// Gets a reference to the `MdrGpuMaterialHandle` that corresponds to the input `MdrMaterial`.
+  /// This is called when building the render command buffer to bind the underlying buffers.
+  pub(crate) fn get_material_handle(&self, mat: &MdrMaterial) -> &MdrGpuMaterialHandle {
+    match self.material_library.get_key_value(&mat.name) {
+      Some((_, handle)) => handle,
+      None => {
+        panic!("Could not find material {} in mat library", mat.name);
+      }
+    }
+  }
+
+  /// Uploads input `MdrMeshdata` to the GPU and returns an `MdrGpuMeshHandle` containing the
+  /// vertex buffer, index buffer, and index count for the input data.
   fn upload_mesh_to_gpu(&mut self, mesh: MdrMeshData) -> MdrGpuMeshHandle {
     let index_count = mesh.indices.len() as u32;
     MdrGpuMeshHandle {
@@ -308,6 +338,8 @@ impl MdrResourceManager {
     }
   }
 
+  /// Uploads an input `image::DynamicImage` to the GPU  with settings defined by the `texture_create_info`.
+  /// Returns an `MdrGpuTextureHandle` containing the resulting image view and sampler.
   fn upload_image_to_gpu(
     &mut self,
     image: DynamicImage,
@@ -367,6 +399,8 @@ impl MdrResourceManager {
     }
   }
 
+  /// Uploads an input `MdrMaterialUniformData` to the GPU .
+  /// Returns an `MdrGpuMaterialHandle` containing the resulting buffer.
   fn upload_material_to_gpu(&mut self, material: MdrMaterialUniformData) -> MdrGpuMaterialHandle {
     MdrGpuMaterialHandle {
       material_chunk: self.material_buffer_pool.chunk([material]).unwrap(),

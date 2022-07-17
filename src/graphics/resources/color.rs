@@ -1,5 +1,3 @@
-use image::ColorType;
-
 #[derive(Copy, Clone)]
 pub struct MdrRgb {
   pub r: f32,
