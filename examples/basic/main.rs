@@ -69,15 +69,15 @@ fn main() {
       "blue_tiles_base_color",
     )
     .unwrap();
-  let wood_planks_base_color = engine
+  let stylized_wood_base_color = engine
     .manage_resources()
     .load_texture(
       MdrTextureCreateInfo {
-        source: asset("textures/wood_planks/base_color.png").as_str(),
+        source: asset("textures/stylized_wood/base_color.jpg").as_str(),
         color_type: MdrColorType::SRGBA,
         sampler_mode: MdrSamplerMode::Repeat,
       },
-      "wood_planks_base_color",
+      "stylized_wood_base_color",
     )
     .unwrap();
   let red_fabric_base_color = engine
@@ -130,7 +130,7 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse: wood_planks_base_color,
+        diffuse: stylized_wood_base_color,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
