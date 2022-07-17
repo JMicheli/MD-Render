@@ -74,10 +74,10 @@ vec3 calculate_point_light_contribution(PointLightData light, vec3 N, vec3 V) {
   // Light-specific direction vectors
   // Direction to light
   vec3 L = normalize(light.position - v_position);
-  // Direction of a reflected light ray
-  vec3 R = reflect(-L, N);
+  // Blinn-Phong halfway vector
+  vec3 H = normalize(L + V);
 
-  // Phong BRDF
+  // Blinn-Phong BRDF
   // Ambient contribution
   vec3 ambient = ambient_strength * light.color;
   
@@ -86,7 +86,7 @@ vec3 calculate_point_light_contribution(PointLightData light, vec3 N, vec3 V) {
   vec3 diffuse = diffusion_coefficient * light.color;
 
   // Specular contribution
-  float specular_coefficient = pow(max(dot(V, R), 0.0), material.shininess);
+  float specular_coefficient = pow(max(dot(N, H), 0.0), material.shininess);
   vec3 specular = specular_strength * specular_coefficient * light.color;
 
   return (ambient + diffuse + specular);
