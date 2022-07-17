@@ -3,6 +3,7 @@
 // Configuration
 ////////////////
 #define MAX_POINT_LIGHTS 10
+#define GAMMA_FACTOR 2.2
 
 // Inputs/Ouputs
 ////////////////
@@ -71,7 +72,10 @@ void main() {
     result += calculate_point_light_contribution(scene_data.point_lights[i], specular_strength, N, V) * diffuse_color.xyz;
   }
 
-  f_color = vec4(result, diffuse_color.w);
+  // Perform gamma correction
+  vec3 gamma_corrected_result = pow(result, vec3(1.0/GAMMA_FACTOR));
+
+  f_color = vec4(gamma_corrected_result, diffuse_color.w);
 }
 
 // Impl lighting functions

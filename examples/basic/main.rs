@@ -16,6 +16,7 @@ use utils::{asset, DEBUG_ENABLED, MDR_LOG_LEVEL};
 
 // Consts for this example
 const LIGHT_MOV_SPEED: f32 = 1.0;
+const LIGHT_BRIGHTNESS: f32 = 2.0;
 const CAMERA_MOV_SPEED: f32 = 0.5;
 const CAMERA_ROT_SPEED: f32 = 0.01;
 
@@ -204,7 +205,7 @@ fn main() {
   engine.scene.add_object(ground_plane);
 
   // Add white light
-  let mut white_light = MdrLight::white(5.0);
+  let mut white_light = MdrLight::white(LIGHT_BRIGHTNESS);
   white_light.translation.set(1.0, 3.0, 3.0);
   engine.scene.lights.add_light(white_light);
 
