@@ -9,7 +9,6 @@ fxhash = "0.2.1"
 image = "0.24.0"
 log = "0.4.17"
 nalgebra = "0.31.0"
-rustc-hash = "1.1.0"
 tobj = "3.2.2"
 vulkano = { version = "0.29.0", path = "./vendor/vulkano/vulkano" }
 vulkano-shaders = { version = "0.29.0", path = "./vendor/vulkano/vulkano-shaders" }

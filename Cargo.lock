@@ -697,7 +697,6 @@ dependencies = [
  "image",
  "log",
  "nalgebra",
- "rustc-hash",
  "tobj",
  "vulkano",
  "vulkano-shaders",
@@ -1192,12 +1191,6 @@ checksum = "921904a62e410e37e215c40381b7117f830d9d89ba60ab5236170541dd25646b"
 dependencies = [
  "xmlparser",
 ]
-
-[[package]]
-name = "rustc-hash"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "ryu"

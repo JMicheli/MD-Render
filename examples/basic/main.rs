@@ -92,26 +92,26 @@ fn main() {
       "blue_tiles_roughness",
     )
     .unwrap();
-  let stylized_wood_base_color = engine
+  let wood_planks_base_color = engine
     .manage_resources()
     .load_texture(
       MdrTextureCreateInfo {
-        source: asset("textures/stylized_wood/base_color.jpg").as_str(),
+        source: asset("textures/wood_planks/base_color.png").as_str(),
         color_type: MdrColorType::SRGBA,
         sampler_mode: MdrSamplerMode::Repeat,
       },
-      "stylized_wood_base_color",
+      "wood_planks_base_color",
     )
     .unwrap();
-  let stylized_wood_roughness = engine
+  let wood_planks_roughness = engine
     .manage_resources()
     .load_texture(
       MdrTextureCreateInfo {
-        source: asset("textures/stylized_wood/roughness.jpg").as_str(),
+        source: asset("textures/wood_planks/roughness.png").as_str(),
         color_type: MdrColorType::SRGBA,
         sampler_mode: MdrSamplerMode::Repeat,
       },
-      "stylized_wood_roughness",
+      "wood_planks_roughness",
     )
     .unwrap();
   let red_fabric_base_color = engine
@@ -178,8 +178,8 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse: stylized_wood_base_color,
-        roughness: stylized_wood_roughness,
+        diffuse: wood_planks_base_color,
+        roughness: wood_planks_roughness,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
