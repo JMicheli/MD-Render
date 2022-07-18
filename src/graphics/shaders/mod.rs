@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use vulkano::{device::Device, shader::ShaderModule};
 
-pub mod basic_vertex_shader {
+pub mod mesh_vertex_shader {
   vulkano_shaders::shader! {
     ty: "vertex",
-    path: "src/graphics/shaders/basic.vert",
+    path: "src/graphics/shaders/mesh.vert",
     types_meta: {
       use bytemuck::{Pod, Zeroable};
 
@@ -14,10 +14,10 @@ pub mod basic_vertex_shader {
   }
 }
 
-pub mod basic_fragment_shader {
+pub mod mesh_fragment_shader {
   vulkano_shaders::shader! {
     ty: "fragment",
-    path: "src/graphics/shaders/basic.frag",
+    path: "src/graphics/shaders/mesh.frag",
     types_meta: {
       use bytemuck::{Pod, Zeroable};
 
@@ -26,9 +26,9 @@ pub mod basic_fragment_shader {
   }
 }
 
-pub fn load_basic_shaders(logical_device: &Arc<Device>) -> (Arc<ShaderModule>, Arc<ShaderModule>) {
+pub fn load_mesh_shaders(logical_device: &Arc<Device>) -> (Arc<ShaderModule>, Arc<ShaderModule>) {
   // Vertex shader
-  let vs = match basic_vertex_shader::load(logical_device.clone()) {
+  let vs = match mesh_vertex_shader::load(logical_device.clone()) {
     Ok(value) => value,
     Err(e) => {
       panic!("Failed to load vertex shader module: {}", e);
@@ -36,7 +36,7 @@ pub fn load_basic_shaders(logical_device: &Arc<Device>) -> (Arc<ShaderModule>, A
   };
 
   // Fragment shader
-  let fs = match basic_fragment_shader::load(logical_device.clone()) {
+  let fs = match mesh_fragment_shader::load(logical_device.clone()) {
     Ok(value) => value,
     Err(e) => {
       panic!("Failed to load fragment shader module: {}", e);

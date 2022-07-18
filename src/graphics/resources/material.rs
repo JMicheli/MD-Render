@@ -4,7 +4,7 @@ use vulkano::{buffer::cpu_pool::CpuBufferPoolChunk, memory::pool::StdMemoryPool}
 
 use super::{color::MdrRgb, MdrGpuTextureHandle, MdrTexture};
 
-pub use crate::graphics::shaders::basic_fragment_shader::ty::MdrMaterialUniformData;
+pub use crate::graphics::shaders::mesh_fragment_shader::ty::MdrMaterialUniformData;
 
 #[derive(Debug)]
 pub struct MdrMaterial {

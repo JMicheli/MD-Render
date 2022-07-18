@@ -19,7 +19,6 @@ use vulkano::{
   instance::{Instance, InstanceCreateInfo, InstanceExtensions},
   pipeline::{graphics::viewport::Viewport, Pipeline, PipelineBindPoint},
   render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass},
-  shader::ShaderModule,
   swapchain::{self, AcquireError, Surface, Swapchain, SwapchainCreateInfo},
   sync::{self, FlushError, GpuFuture},
 };
@@ -27,11 +26,8 @@ use vulkano::{
 use crate::{
   config::MAX_POINT_LIGHTS,
   graphics::{
-    pipeline::MdrPipeline,
-    shaders::{
-      self,
-      basic_vertex_shader::ty::{MdrPushConstants, MdrSceneData},
-    },
+    pipeline::MdrMeshPipeline,
+    shaders::mesh_vertex_shader::ty::{MdrPushConstants, MdrSceneData},
     window::{MdrWindow, MdrWindowOptions},
   },
   scene::MdrScene,
@@ -39,7 +35,7 @@ use crate::{
 
 use super::{
   resources::MdrResourceManager,
-  shaders::basic_vertex_shader::ty::{CameraData, PointLightData},
+  shaders::mesh_vertex_shader::ty::{CameraData, PointLightData},
 };
 
 /// A Vulkan graphics context, contains Vulkano members.
@@ -53,7 +49,7 @@ pub struct MdrGraphicsContext {
   swapchain_images: Vec<Arc<SwapchainImage<Window>>>,
   render_pass: Arc<RenderPass>,
   viewport: Viewport,
-  pipeline: Arc<MdrPipeline>,
+  pipeline: MdrMeshPipeline,
   framebuffers: Vec<Arc<Framebuffer>>,
 
   window_was_resized: bool,
@@ -61,8 +57,6 @@ pub struct MdrGraphicsContext {
   updated_aspect_ratio: bool,
   frame_futures: Vec<Option<Box<dyn GpuFuture>>>,
   previous_frame_index: usize,
-  vs: Arc<ShaderModule>,
-  fs: Arc<ShaderModule>,
 }
 
 impl MdrGraphicsContext {
@@ -115,10 +109,8 @@ impl MdrGraphicsContext {
     let viewport = window.create_viewport();
     debug!("Created viewport");
 
-    // Load shaders to logical device
-    let (vs, fs) = shaders::load_basic_shaders(&logical_device);
-    // Create pipeline
-    let pipeline = MdrPipeline::new(&logical_device, &vs, &fs, &render_pass, &viewport);
+    // Create mesh pipeline
+    let pipeline = MdrMeshPipeline::new(&logical_device, &render_pass, &viewport);
     debug!("Created pipeline");
 
     // Create framebuffers
@@ -150,8 +142,6 @@ impl MdrGraphicsContext {
       updated_aspect_ratio: true,
       frame_futures,
       previous_frame_index: 0,
-      vs,
-      fs,
     }
   }
 
@@ -251,13 +241,7 @@ impl MdrGraphicsContext {
         // Recreate viewport and pipeline
         trace!("Window resized, recreating pipeline");
         self.viewport.dimensions = self.window.dimensions().into();
-        self.pipeline = MdrPipeline::new(
-          &self.logical_device,
-          &self.vs,
-          &self.fs,
-          &self.render_pass,
-          &self.viewport,
-        );
+        self.pipeline.recreate(&self.render_pass, &self.viewport);
 
         self.updated_aspect_ratio = true;
       }
@@ -287,7 +271,7 @@ impl MdrGraphicsContext {
     &self,
     logical_device: &Arc<Device>,
     queue: &Arc<Queue>,
-    pipeline: &Arc<MdrPipeline>,
+    pipeline: &MdrMeshPipeline,
     framebuffer: &Arc<Framebuffer>,
     scene: &MdrScene,
   ) -> Arc<PrimaryAutoCommandBuffer> {
