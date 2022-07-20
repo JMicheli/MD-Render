@@ -1,7 +1,7 @@
 #version 450
 
 // Inputs/Ouputs
-////////////////
+// /////////////
 layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec3 a_normal;
 layout(location = 2) in vec2 a_uv;
@@ -11,7 +11,7 @@ layout(location = 1) out vec3 v_normal;
 layout(location = 2) out vec2 v_uv;
 
 // Input buffer objects
-///////////////////////
+// ////////////////////
 struct CameraData {
   vec3 position;
 
@@ -37,7 +37,7 @@ layout(push_constant) uniform MdrPushConstants
 } object;
 
 // Shader Entry Point
-/////////////////////
+// //////////////////
 void main() {
   // Calculate world position of input vertex
   vec4 world_position =  object.transformation_matrix * vec4(a_position, 1.0);

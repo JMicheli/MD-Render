@@ -1,12 +1,12 @@
 #version 450
 
 // Configuration
-////////////////
+// /////////////
 #define MAX_POINT_LIGHTS 10
 #define GAMMA_FACTOR 2.2
 
 // Inputs/Ouputs
-////////////////
+// /////////////
 layout(location = 0) in vec3 v_position;
 layout(location = 1) in vec3 v_normal;
 layout(location = 2) in vec2 v_uv;
@@ -14,7 +14,7 @@ layout(location = 2) in vec2 v_uv;
 layout(location = 0) out vec4 f_color;
 
 // Input buffer objects
-///////////////////////
+// ////////////////////
 struct CameraData {
   vec3 position;
 
@@ -50,11 +50,11 @@ layout(set = 1, binding = 2) uniform sampler2D roughness_map;
 const float ambient_strength = 0.1;
 
 // Lighting functions
-/////////////////////
+// //////////////////
 vec3 calculate_point_light_contribution(PointLightData light, vec3 specular_strength, vec3 N, vec3 V);
 
 // Shader Entry Point
-/////////////////////
+// //////////////////
 void main() {
   // Calculate normalized directional vectors for lighting
   // Surface normal
@@ -79,7 +79,7 @@ void main() {
 }
 
 // Impl lighting functions
-//////////////////////////
+// ///////////////////////
 
 vec3 calculate_point_light_contribution(PointLightData light, vec3 specular_strength, vec3 N, vec3 V) {
   // Light-specific direction vectors

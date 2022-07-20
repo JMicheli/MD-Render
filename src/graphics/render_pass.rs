@@ -38,7 +38,7 @@ impl MdrRenderPass {
     Self { render_pass }
   }
 
-  pub fn internal_render_pass(&self) -> Arc<RenderPass> {
+  pub fn get_pass(&self) -> Arc<RenderPass> {
     self.render_pass.clone()
   }
 

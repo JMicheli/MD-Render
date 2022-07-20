@@ -621,7 +621,7 @@ impl MdrGraphicsContext {
       .map(|image| {
         let color_view = ImageView::new_default(image.clone()).unwrap();
         Framebuffer::new(
-          render_pass.internal_render_pass(),
+          render_pass.get_pass(),
           FramebufferCreateInfo {
             // Attach color and depth view
             attachments: vec![color_view, depth_buffer_view.clone()],
