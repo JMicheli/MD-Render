@@ -18,7 +18,7 @@ use vulkano::{
   image::{view::ImageView, AttachmentImage, ImageAccess, ImageUsage, SwapchainImage},
   instance::{Instance, InstanceCreateInfo, InstanceExtensions},
   pipeline::{graphics::viewport::Viewport, Pipeline, PipelineBindPoint},
-  render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass},
+  render_pass::{Framebuffer, FramebufferCreateInfo},
   swapchain::{self, AcquireError, Surface, Swapchain, SwapchainCreateInfo},
   sync::{self, FlushError, GpuFuture},
 };
@@ -27,6 +27,7 @@ use crate::{
   config::MAX_POINT_LIGHTS,
   graphics::{
     pipeline::MdrMeshPipeline,
+    render_pass::MdrRenderPass,
     shaders::mesh_vertex_shader::ty::{MdrPushConstants, MdrSceneData},
     window::{MdrWindow, MdrWindowOptions},
   },
@@ -47,7 +48,7 @@ pub struct MdrGraphicsContext {
   queue: Arc<Queue>,
   swapchain: Arc<Swapchain<Window>>,
   swapchain_images: Vec<Arc<SwapchainImage<Window>>>,
-  render_pass: Arc<RenderPass>,
+  render_pass: MdrRenderPass,
   viewport: Viewport,
   pipeline: MdrMeshPipeline,
   framebuffers: Vec<Arc<Framebuffer>>,
@@ -102,7 +103,7 @@ impl MdrGraphicsContext {
     debug!("Created swapchain");
 
     // Create render pass
-    let render_pass = Self::create_render_pass(&logical_device, swapchain.image_format());
+    let render_pass = MdrRenderPass::new(&logical_device, swapchain.image_format());
     debug!("Created render pass");
 
     // Create viewport
@@ -286,10 +287,10 @@ impl MdrGraphicsContext {
     // Clear color used when drawing bacground
     let clear_color_value = ClearValue::Float([0.1, 0.1, 0.1, 1.0]);
     let clear_depth_value = ClearValue::Depth(1.0);
-
-    // Build command buffer
     let mut begin_render_pass_info = RenderPassBeginInfo::framebuffer(framebuffer.clone());
     begin_render_pass_info.clear_values = vec![Some(clear_color_value), Some(clear_depth_value)];
+
+    // Build command buffer
     // Begin render pass
     builder
       .begin_render_pass(begin_render_pass_info, SubpassContents::Inline)
@@ -541,9 +542,7 @@ impl MdrGraphicsContext {
     let device_creation_results = Device::new(
       physical_device,
       DeviceCreateInfo {
-        enabled_extensions: physical_device
-          .required_extensions()
-          .union(&device_extensions),
+        enabled_extensions: device_extensions,
         queue_create_infos: vec![QueueCreateInfo::family(queue_family)],
         ..Default::default()
       },
@@ -605,35 +604,10 @@ impl MdrGraphicsContext {
     }
   }
 
-  fn create_render_pass(logical_device: &Arc<Device>, image_format: Format) -> Arc<RenderPass> {
-    return vulkano::single_pass_renderpass!(
-      logical_device.clone(),
-      attachments: {
-        color: {
-          load: Clear,
-          store: Store,
-          format: image_format,
-          samples: 1,
-        },
-        depth: {
-          load: Clear,
-          store: DontCare,
-          format: Format::D16_UNORM,
-          samples: 1,
-        }
-      },
-      pass: {
-        color: [color],
-        depth_stencil: {depth}
-      }
-    )
-    .unwrap();
-  }
-
   fn create_framebuffers(
     logical_device: &Arc<Device>,
     swapchain_images: &Vec<Arc<SwapchainImage<Window>>>,
-    render_pass: &Arc<RenderPass>,
+    render_pass: &MdrRenderPass,
   ) -> Vec<Arc<Framebuffer>> {
     let dimensions = swapchain_images[0].dimensions().width_height();
     // Create depth buffer
@@ -647,7 +621,7 @@ impl MdrGraphicsContext {
       .map(|image| {
         let color_view = ImageView::new_default(image.clone()).unwrap();
         Framebuffer::new(
-          render_pass.clone(),
+          render_pass.internal_render_pass(),
           FramebufferCreateInfo {
             // Attach color and depth view
             attachments: vec![color_view, depth_buffer_view.clone()],

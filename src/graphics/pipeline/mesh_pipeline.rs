@@ -12,11 +12,10 @@ use vulkano::{
     },
     GraphicsPipeline,
   },
-  render_pass::{RenderPass, Subpass},
   shader::ShaderModule,
 };
 
-use crate::graphics::{resources::MdrVertex, shaders};
+use crate::graphics::{render_pass::MdrRenderPass, resources::MdrVertex, shaders};
 
 /// The pipeline used for mesh drawing.
 pub struct MdrMeshPipeline {
@@ -30,7 +29,7 @@ pub struct MdrMeshPipeline {
 impl MdrMeshPipeline {
   pub fn new(
     logical_device: &Arc<Device>,
-    render_pass: &Arc<RenderPass>,
+    render_pass: &MdrRenderPass,
     viewport: &Viewport,
   ) -> Self {
     // Load shader modules to GPU
@@ -51,7 +50,7 @@ impl MdrMeshPipeline {
     }
   }
 
-  pub fn recreate(&mut self, render_pass: &Arc<RenderPass>, viewport: &Viewport) {
+  pub fn recreate(&mut self, render_pass: &MdrRenderPass, viewport: &Viewport) {
     self.graphics_pipeline = Self::create_graphics_pipeline(
       &self.logical_device,
       render_pass,
@@ -63,7 +62,7 @@ impl MdrMeshPipeline {
 
   fn create_graphics_pipeline(
     logical_device: &Arc<Device>,
-    render_pass: &Arc<RenderPass>,
+    render_pass: &MdrRenderPass,
     vertex_shader: &Arc<ShaderModule>,
     fragment_shader: &Arc<ShaderModule>,
     viewport: &Viewport,
@@ -92,7 +91,7 @@ impl MdrMeshPipeline {
       // Settings for depth testing (to ensure correct ordering of fragments)
       .depth_stencil_state(DepthStencilState::simple_depth_test())
       // The render pass to use for this pipeline
-      .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
+      .render_pass(render_pass.get_subpass())
       // Build and unwrap to get the pipeline object
       .build(logical_device.clone())
       .unwrap()
