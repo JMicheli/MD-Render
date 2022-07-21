@@ -332,9 +332,16 @@ impl MdrResourceManager {
         return Err(MdrResourceError::TextureNotFound);
       }
     };
+    let normal_map = match self.texture_library.get(&material_create_info.normal.name) {
+      Some(texture) => texture.clone(),
+      None => {
+        return Err(MdrResourceError::TextureNotFound);
+      }
+    };
 
     // Push material to GPU and store in library
-    let material_handle = self.upload_material_to_gpu(material, diffuse_map, roughness_map);
+    let material_handle =
+      self.upload_material_to_gpu(material, diffuse_map, roughness_map, normal_map);
     self
       .material_library
       .insert(String::from(name), material_handle);
@@ -452,12 +459,13 @@ impl MdrResourceManager {
 
       // NonColorData images are in linear color space, and their values are read as data, not rgb.
       // They are used for images that inform shading algorithms (normal maps, roughness maps, etc.)
-      // TODO Make sure assuming NonColor = RGB doesn't break something elsewhere
+      // TODO: Currently we're super wasteful of memory because we use RGBA even when there isn't
+      // a meaningful alpha channel. We should start using texture compression, which will fix this.
       MdrColorType::NonColorData => ImmutableImage::from_iter(
-        image.to_rgb8().into_raw(),
+        image.to_rgba8().into_raw(),
         dimensions,
         MipmapsCount::One,
-        Format::R8G8B8_UNORM,
+        Format::R8G8B8A8_UNORM,
         self.queue.clone(),
       )
       .unwrap(),
@@ -480,6 +488,7 @@ impl MdrResourceManager {
     material_uniforms: MdrMaterialUniformData,
     diffuse_map: MdrGpuTextureHandle,
     roughness_map: MdrGpuTextureHandle,
+    normal_map: MdrGpuTextureHandle,
   ) -> MdrGpuMaterialHandle {
     MdrGpuMaterialHandle {
       material_data: self
@@ -488,6 +497,7 @@ impl MdrResourceManager {
         .unwrap(),
       diffuse_map,
       roughness_map,
+      normal_map,
     }
   }
 

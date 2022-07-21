@@ -48,6 +48,7 @@ fn main() {
     .unwrap();
 
   // Create textures
+  // Metal plates
   let metal_plates_base_color = engine
     .manage_resources()
     .load_texture(
@@ -64,12 +65,24 @@ fn main() {
     .load_texture(
       MdrTextureCreateInfo {
         source: asset("textures/metal_plates/roughness.png").as_str(),
-        color_type: MdrColorType::SRGBA,
+        color_type: MdrColorType::NonColorData,
         sampler_mode: MdrSamplerMode::Repeat,
       },
       "metal_plates_roughness",
     )
     .unwrap();
+  let metal_plates_normal = engine
+    .manage_resources()
+    .load_texture(
+      MdrTextureCreateInfo {
+        source: asset("textures/metal_plates/normal.png").as_str(),
+        color_type: MdrColorType::NonColorData,
+        sampler_mode: MdrSamplerMode::Repeat,
+      },
+      "metal_plates_normal",
+    )
+    .unwrap();
+  // Blue tiles
   let blue_tiles_base_color = engine
     .manage_resources()
     .load_texture(
@@ -86,12 +99,24 @@ fn main() {
     .load_texture(
       MdrTextureCreateInfo {
         source: asset("textures/blue_tiles/roughness.png").as_str(),
-        color_type: MdrColorType::SRGBA,
+        color_type: MdrColorType::NonColorData,
         sampler_mode: MdrSamplerMode::Repeat,
       },
       "blue_tiles_roughness",
     )
     .unwrap();
+  let blue_tiles_normal = engine
+    .manage_resources()
+    .load_texture(
+      MdrTextureCreateInfo {
+        source: asset("textures/blue_tiles/normal.png").as_str(),
+        color_type: MdrColorType::NonColorData,
+        sampler_mode: MdrSamplerMode::Repeat,
+      },
+      "blue_tiles_normal",
+    )
+    .unwrap();
+  // Wood planks
   let wood_planks_base_color = engine
     .manage_resources()
     .load_texture(
@@ -108,12 +133,24 @@ fn main() {
     .load_texture(
       MdrTextureCreateInfo {
         source: asset("textures/wood_planks/roughness.png").as_str(),
-        color_type: MdrColorType::SRGBA,
+        color_type: MdrColorType::NonColorData,
         sampler_mode: MdrSamplerMode::Repeat,
       },
       "wood_planks_roughness",
     )
     .unwrap();
+  let wood_planks_normal = engine
+    .manage_resources()
+    .load_texture(
+      MdrTextureCreateInfo {
+        source: asset("textures/wood_planks/normal.png").as_str(),
+        color_type: MdrColorType::NonColorData,
+        sampler_mode: MdrSamplerMode::Repeat,
+      },
+      "wood_planks_normal",
+    )
+    .unwrap();
+  // Red fabric
   let red_fabric_base_color = engine
     .manage_resources()
     .load_texture(
@@ -130,10 +167,21 @@ fn main() {
     .load_texture(
       MdrTextureCreateInfo {
         source: asset("textures/red_fabric/roughness.png").as_str(),
-        color_type: MdrColorType::SRGBA,
+        color_type: MdrColorType::NonColorData,
         sampler_mode: MdrSamplerMode::Repeat,
       },
       "red_fabric_roughness",
+    )
+    .unwrap();
+  let red_fabric_normal = engine
+    .manage_resources()
+    .load_texture(
+      MdrTextureCreateInfo {
+        source: asset("textures/red_fabric/normal.png").as_str(),
+        color_type: MdrColorType::NonColorData,
+        sampler_mode: MdrSamplerMode::Repeat,
+      },
+      "red_fabric_normal",
     )
     .unwrap();
 
@@ -144,6 +192,7 @@ fn main() {
       MdrMaterialCreateInfo {
         diffuse: red_fabric_base_color,
         roughness: red_fabric_roughness,
+        normal: red_fabric_normal,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
@@ -156,6 +205,7 @@ fn main() {
       MdrMaterialCreateInfo {
         diffuse: blue_tiles_base_color,
         roughness: blue_tiles_roughness,
+        normal: blue_tiles_normal,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
@@ -168,6 +218,7 @@ fn main() {
       MdrMaterialCreateInfo {
         diffuse: metal_plates_base_color,
         roughness: metal_plates_roughness,
+        normal: metal_plates_normal,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
@@ -180,6 +231,7 @@ fn main() {
       MdrMaterialCreateInfo {
         diffuse: wood_planks_base_color,
         roughness: wood_planks_roughness,
+        normal: wood_planks_normal,
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
