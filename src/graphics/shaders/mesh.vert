@@ -1,5 +1,9 @@
 #version 450
 
+// Configuration
+// /////////////
+#define MAX_POINT_LIGHTS 10
+
 // Inputs/Ouputs
 // /////////////
 layout(location = 0) in vec3 a_position;
@@ -28,7 +32,7 @@ struct PointLightData {
 
 layout(set = 0, binding = 0) buffer MdrSceneData {
   CameraData camera;
-  PointLightData point_lights[10];
+  PointLightData point_lights[MAX_POINT_LIGHTS];
   uint point_light_count;
 } scene_data;
 
