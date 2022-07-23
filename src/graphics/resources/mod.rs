@@ -24,11 +24,12 @@ pub use material::{
 };
 pub use mesh::{MdrGpuMeshHandle, MdrMesh, MdrMeshData};
 pub use texture::{MdrGpuTextureHandle, MdrTexture};
-pub use vertex::MdrVertex;
+pub use vertex::{MdrVertex_norm, MdrVertex_pos, MdrVertex_uv};
 
 use self::{
   color::MdrColor,
   texture::{MdrSamplerMode, MdrTextureCreateInfo},
+  vertex::MdrVertex_tan,
 };
 
 /// Manages resources on the GPU by storing meshes, textures, and materials into libraries which
@@ -38,7 +39,10 @@ pub struct MdrResourceManager {
   logical_device: Arc<Device>,
   queue: Arc<Queue>,
 
-  vertex_buffer_pool: CpuBufferPool<MdrVertex>,
+  vertex_pos_buffer_pool: CpuBufferPool<MdrVertex_pos>,
+  vertex_norm_buffer_pool: CpuBufferPool<MdrVertex_norm>,
+  vertex_uv_buffer_pool: CpuBufferPool<MdrVertex_uv>,
+  vertex_tan_buffer_pool: CpuBufferPool<MdrVertex_tan>,
   index_buffer_pool: CpuBufferPool<u32>,
   mesh_library: HashMap<String, MdrGpuMeshHandle, FxBuildHasher>,
 
@@ -53,8 +57,14 @@ pub struct MdrResourceManager {
 impl MdrResourceManager {
   pub fn new(logical_device: Arc<Device>, queue: Arc<Queue>) -> Self {
     // Mesh memory handler initialization
-    let vertex_buffer_pool =
-      CpuBufferPool::<MdrVertex>::new(logical_device.clone(), BufferUsage::vertex_buffer());
+    let vertex_pos_buffer_pool =
+      CpuBufferPool::<MdrVertex_pos>::new(logical_device.clone(), BufferUsage::vertex_buffer());
+    let vertex_norm_buffer_pool =
+      CpuBufferPool::<MdrVertex_norm>::new(logical_device.clone(), BufferUsage::vertex_buffer());
+    let vertex_uv_buffer_pool =
+      CpuBufferPool::<MdrVertex_uv>::new(logical_device.clone(), BufferUsage::vertex_buffer());
+    let vertex_tan_buffer_pool =
+      CpuBufferPool::<MdrVertex_tan>::new(logical_device.clone(), BufferUsage::vertex_buffer());
     let index_buffer_pool =
       CpuBufferPool::<u32>::new(logical_device.clone(), BufferUsage::index_buffer());
     let mesh_library = FxHashMap::<String, MdrGpuMeshHandle>::default();
@@ -73,7 +83,10 @@ impl MdrResourceManager {
       logical_device,
       queue,
 
-      vertex_buffer_pool,
+      vertex_pos_buffer_pool,
+      vertex_norm_buffer_pool,
+      vertex_uv_buffer_pool,
+      vertex_tan_buffer_pool,
       index_buffer_pool,
       mesh_library,
 
@@ -104,46 +117,37 @@ impl MdrResourceManager {
       return Err(MdrResourceError::DuplicateMeshName);
     }
 
-    // Load data from disk
-    let options = tobj::GPU_LOAD_OPTIONS;
-    let load_result = tobj::load_obj(path, &options);
-    let (models, _) = match load_result {
-      Ok(value) => value,
-      Err(e) => {
-        error!("Failed to load obj file: {}, reason: {}", path, e);
-        return Err(MdrResourceError::ObjLoadError);
-      }
+    let mesh_data = match mesh::open_obj(path) {
+      Some(mesh) => mesh,
+      None => return Err(MdrResourceError::ObjLoadError),
     };
+    debug!("Loaded obj file: {}", path);
 
-    // Take only the first model
-    let model = &models[0];
+    let mesh_handle = self.upload_mesh_to_gpu(mesh_data);
+    self.mesh_library.insert(String::from(name), mesh_handle);
+    debug!("Added {} to mesh library", name);
 
-    // Get positions, indices, and normals for each vertex
-    let positions = &model.mesh.positions;
-    let indices = &model.mesh.indices;
-    let normals = &model.mesh.normals;
-    let tex_coords = &model.mesh.texcoords;
+    Ok(MdrMesh {
+      name: String::from(name),
+    })
+  }
 
-    // Loop over vertices
-    let vertex_count = positions.len() / 3;
-    let mut vertices = Vec::with_capacity(vertex_count);
-    for vertex_index in 0..vertex_count {
-      let index = 3 * vertex_index;
-      let index_2d = 2 * vertex_index;
-      vertices.push(MdrVertex {
-        a_position: [positions[index], positions[index + 1], positions[index + 2]],
-        a_normal: [normals[index], normals[index + 1], normals[index + 2]],
-        a_uv: [tex_coords[index_2d], tex_coords[index_2d + 1]],
-      });
+  pub fn load_mesh<'a>(&mut self, path: &str, name: &'a str) -> Result<MdrMesh, MdrResourceError> {
+    // open_model_assimp
+
+    // Check that the mesh name isn't already in use
+    if self.mesh_library.contains_key(name) {
+      error!("Mesh library already contains name: {}", name);
+      return Err(MdrResourceError::DuplicateMeshName);
     }
 
-    debug!("Loaded obj file: {}", path);
-    let mesh = MdrMeshData {
-      vertices,
-      indices: indices.clone(),
+    let mesh_data = match mesh::open_obj(path) {
+      Some(mesh) => mesh,
+      None => return Err(MdrResourceError::AssimpLoadError),
     };
+    debug!("Loaded obj file: {}", path);
 
-    let mesh_handle = self.upload_mesh_to_gpu(mesh);
+    let mesh_handle = self.upload_mesh_to_gpu(mesh_data);
     self.mesh_library.insert(String::from(name), mesh_handle);
     debug!("Added {} to mesh library", name);
 
@@ -413,7 +417,11 @@ impl MdrResourceManager {
   fn upload_mesh_to_gpu(&mut self, mesh: MdrMeshData) -> MdrGpuMeshHandle {
     let index_count = mesh.indices.len() as u32;
     MdrGpuMeshHandle {
-      vertex_chunk: self.vertex_buffer_pool.chunk(mesh.vertices).unwrap(),
+      positions_chunk: self.vertex_pos_buffer_pool.chunk(mesh.positions).unwrap(),
+      normals_chunk: self.vertex_norm_buffer_pool.chunk(mesh.normals).unwrap(),
+      uvs_chunk: self.vertex_uv_buffer_pool.chunk(mesh.uvs).unwrap(),
+      tangents_chunk: self.vertex_tan_buffer_pool.chunk(mesh.tangents).unwrap(),
+
       index_chunk: self.index_buffer_pool.chunk(mesh.indices).unwrap(),
       index_count,
     }
@@ -548,6 +556,8 @@ impl MdrResourceManager {
 pub enum MdrResourceError {
   /// Emitted when the resource manager fails to load an .obj file.
   ObjLoadError,
+  /// Emitted when the resource manager fails to load assets with Assimp.
+  AssimpLoadError,
   /// Emitted when the resource manager fails to load an image file.
   ImageLoadError,
 

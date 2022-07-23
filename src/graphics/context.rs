@@ -333,7 +333,15 @@ impl MdrGraphicsContext {
 
       // Bind vertex data
       builder
-        .bind_vertex_buffers(0, mesh_handle.vertex_chunk.clone())
+        .bind_vertex_buffers(
+          0,
+          (
+            mesh_handle.positions_chunk.clone(),
+            mesh_handle.normals_chunk.clone(),
+            mesh_handle.uvs_chunk.clone(),
+            mesh_handle.tangents_chunk.clone(),
+          ),
+        )
         .bind_index_buffer(mesh_handle.index_chunk.clone());
 
       // Upload material data
@@ -360,6 +368,12 @@ impl MdrGraphicsContext {
             2,
             material_handle.roughness_map.image_view.clone(),
             material_handle.roughness_map.sampler.clone(),
+          ),
+          // Normal map image sampler
+          WriteDescriptorSet::image_view_sampler(
+            3,
+            material_handle.normal_map.image_view.clone(),
+            material_handle.normal_map.sampler.clone(),
           ),
         ],
       )

@@ -15,7 +15,14 @@ use vulkano::{
   shader::ShaderModule,
 };
 
-use crate::graphics::{render_pass::MdrRenderPass, resources::MdrVertex, shaders};
+use crate::{
+  graphics::{
+    render_pass::MdrRenderPass,
+    resources::{MdrVertex_norm, MdrVertex_pos, MdrVertex_uv},
+    shaders,
+  },
+  resources::vertex::MdrVertex_tan,
+};
 
 /// The pipeline used for mesh drawing.
 pub struct MdrMeshPipeline {
@@ -69,7 +76,17 @@ impl MdrMeshPipeline {
   ) -> Arc<GraphicsPipeline> {
     GraphicsPipeline::start()
       // Define what vertex structure the pipeline will expect
-      .vertex_input_state(BuffersDefinition::new().vertex::<MdrVertex>())
+      .vertex_input_state(
+        BuffersDefinition::new()
+          // Position data, looks like [f32; 3] in memory
+          .vertex::<MdrVertex_pos>()
+          // Normal data, looks like [f32; 3] in memory
+          .vertex::<MdrVertex_norm>()
+          // Uv data, looks like [f32; 2] in memory
+          .vertex::<MdrVertex_uv>()
+          // Tangent space basis data, looks like [f32; 3] in memory
+          .vertex::<MdrVertex_tan>(),
+      )
       // Link the vertex shader
       .vertex_shader(vertex_shader.entry_point("main").unwrap(), ())
       // Input assembly settings (we use the defaults)

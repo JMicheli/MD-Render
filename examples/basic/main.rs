@@ -32,19 +32,19 @@ fn main() {
   // Create object meshes
   let monkey_mesh = engine
     .manage_resources()
-    .load_mesh_obj(asset("meshes/suzanne.obj").as_str(), "monkey")
+    .load_mesh(asset("meshes/suzanne.obj").as_str(), "monkey")
     .unwrap();
   let sphere_mesh = engine
     .manage_resources()
-    .load_mesh_obj(asset("meshes/sphere.obj").as_str(), "sphere")
+    .load_mesh(asset("meshes/sphere.obj").as_str(), "sphere")
     .unwrap();
   let cube_mesh = engine
     .manage_resources()
-    .load_mesh_obj(asset("meshes/cube.obj").as_str(), "cube")
+    .load_mesh(asset("meshes/cube.obj").as_str(), "cube")
     .unwrap();
   let plane_mesh = engine
     .manage_resources()
-    .load_mesh_obj(asset("meshes/plane.obj").as_str(), "plane")
+    .load_mesh(asset("meshes/plane.obj").as_str(), "plane")
     .unwrap();
 
   // Create textures

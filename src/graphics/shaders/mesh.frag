@@ -8,8 +8,9 @@
 // Inputs/Ouputs
 // /////////////
 layout(location = 0) in vec3 v_position;
-layout(location = 1) in vec3 v_normal;
-layout(location = 2) in vec2 v_uv;
+layout(location = 1) in vec2 v_uv;
+layout(location = 2) in mat3 v_TBN;
+
 
 layout(location = 0) out vec4 f_color;
 
@@ -42,7 +43,8 @@ layout(set = 1, binding = 0) uniform MdrMaterialUniformData {
 layout(set = 1, binding = 1) uniform sampler2D diffuse_map;
 // Roughness map for material
 layout(set = 1, binding = 2) uniform sampler2D roughness_map;
-
+// Normal map for material
+layout(set = 1, binding = 3) uniform sampler2D normal_map;
 
 ///////////////////////
 //TODO Remove test code
@@ -57,8 +59,10 @@ vec3 calculate_point_light_contribution(PointLightData light, vec3 specular_stre
 // //////////////////
 void main() {
   // Calculate normalized directional vectors for lighting
-  // Surface normal
-  vec3 N = normalize(v_normal);
+  // Surface normal from normal map and TBN
+  vec3 N = texture(normal_map, v_uv).xyz;
+  N = N * 2.0 - 1.0;
+  N = normalize(v_TBN * N);
   // Direction to viewer
   vec3 V = normalize(scene_data.camera.position - v_position);
 
