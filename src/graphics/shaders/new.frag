@@ -65,7 +65,28 @@ layout(set = 1, binding = 3) uniform sampler2D normal_map;
 // Shader Entry Point
 // //////////////////
 void main() {
-  f_color = vec4(0.0, 0.0, 0.0, 1.0);
+  vec3 diffuse_color = texture(diffuse_map, v_uv).xyz;
+  float specular_strength = material.shininess * texture(roughness_map, v_uv).x;
+  vec3 light_position = scene_data.point_lights[0].position;
+  vec3 light_color = scene_data.point_lights[0].color;
+
+  // ambient
+  vec3 ambient = light_color * diffuse_color;
+  
+  // diffuse 
+  vec3 N = normalize(v_TBN[2]);
+  vec3 L = normalize(light_position - v_position);
+  float diff = max(dot(N, L), 0.0);
+  vec3 diffuse = light_color * diff * diffuse_color;
+  
+  // specular
+  vec3 V = normalize(scene_data.camera.position - v_position);
+  vec3 R = reflect(-L, N);  
+  float spec = pow(max(dot(V, R), 0.0), specular_strength);
+  vec3 specular = light_color * spec * material.specular_color;  
+      
+  vec3 result = ambient + diffuse + specular;
+  f_color = vec4(result, 1.0);
 
   // ///////////////
   // IGNORE

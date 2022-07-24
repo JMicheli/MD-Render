@@ -194,7 +194,7 @@ fn main() {
         roughness: red_fabric_roughness,
         normal: red_fabric_normal,
         specular_color: MdrRgb::white(),
-        shininess: 20.0,
+        shininess: 2.0,
       },
       "monkey_mat",
     )
