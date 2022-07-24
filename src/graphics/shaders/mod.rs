@@ -5,7 +5,7 @@ use vulkano::{device::Device, shader::ShaderModule};
 pub mod mesh_vertex_shader {
   vulkano_shaders::shader! {
     ty: "vertex",
-    path: "src/graphics/shaders/mesh.vert",
+    path: "src/graphics/shaders/new.vert",
     types_meta: {
       use bytemuck::{Pod, Zeroable};
 
@@ -17,7 +17,7 @@ pub mod mesh_vertex_shader {
 pub mod mesh_fragment_shader {
   vulkano_shaders::shader! {
     ty: "fragment",
-    path: "src/graphics/shaders/mesh.frag",
+    path: "src/graphics/shaders/new.frag",
     types_meta: {
       use bytemuck::{Pod, Zeroable};
 
