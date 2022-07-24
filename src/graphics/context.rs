@@ -146,6 +146,7 @@ impl MdrGraphicsContext {
     }
   }
 
+  /// Submits a draw command buffer based on the `MdrScene` referenced.
   pub fn draw(&mut self, scene: &MdrScene) {
     trace!("Starting draw");
 
@@ -221,6 +222,7 @@ impl MdrGraphicsContext {
     trace!("Completed draw")
   }
 
+  /// Performs updates based on the render surface's size.
   fn size_dependent_updates(&mut self) {
     if self.window_was_resized || self.should_recreate_swapchain {
       self.should_recreate_swapchain = false;
@@ -249,6 +251,7 @@ impl MdrGraphicsContext {
     }
   }
 
+  /// Returns the aspect ratio of the framebuffer, equal to `width / height`.
   fn aspect_ratio(&self) -> f32 {
     let framebuffer = self.framebuffers[0].clone();
     framebuffer.extent()[0] as f32 / framebuffer.extent()[1] as f32
@@ -267,7 +270,7 @@ impl MdrGraphicsContext {
     }
   }
 
-  // Generate a command buffer for drawing a `MdrScene`.
+  /// Generate a command buffer for drawing a `MdrScene`.
   fn create_command_buffer(
     &self,
     logical_device: &Arc<Device>,
@@ -406,6 +409,7 @@ impl MdrGraphicsContext {
     command_buffer
   }
 
+  /// Uploads data representing a scene's non-object data, i.e., the camera and lights.
   fn upload_scene_data(
     logical_device: &Arc<Device>,
     scene: &MdrScene,
@@ -653,6 +657,8 @@ impl MdrGraphicsContext {
       .collect::<Vec<_>>();
   }
 
+  /// Sets up a vector of futures corresponding to each framebuffer. These futures will be used to chain
+  /// draw commands and ensure that frames are processed in the order the swapchain acquires them.
   fn set_up_frame_futures(frame_count: usize) -> Vec<Option<Box<dyn GpuFuture>>> {
     // Frames in flight setup
     let mut frame_futures: Vec<Option<Box<dyn GpuFuture>>> = Vec::new();

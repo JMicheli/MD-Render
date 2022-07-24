@@ -35,19 +35,20 @@ impl MdrLight {
   }
 }
 
+/// A set of lights in a scene. Currently only supports point lights.
+/// Up to `MAX_POINT_LIGHTS` can be added to a scene.
 pub struct MdrLightSet {
   lights: Vec<MdrLight>,
   light_count: usize,
 }
 
 impl MdrLightSet {
+  /// Create an empty light set.
   pub fn new() -> Self {
-    Self {
-      lights: Vec::<MdrLight>::with_capacity(MAX_POINT_LIGHTS),
-      light_count: 0,
-    }
+    Self::default()
   }
 
+  /// Add a light to the scene's light set. Will panic if `MAX_POINT_LIGHTS` are already present.
   pub fn add_light(&mut self, light: MdrLight) {
     if self.light_count == MAX_POINT_LIGHTS {
       panic!(
@@ -60,6 +61,7 @@ impl MdrLightSet {
     self.light_count += 1;
   }
 
+  /// Remove a light from the light set.
   pub fn remove_light(&mut self, light_index: usize) {
     assert!(light_index < MAX_POINT_LIGHTS);
 
@@ -67,14 +69,17 @@ impl MdrLightSet {
     self.light_count -= 1;
   }
 
+  /// Get a reference to a particular light by index. Returns `None` if no light exists at that index.
   pub fn get_light(&self, light_index: usize) -> Option<&MdrLight> {
     self.lights.get(light_index)
   }
 
+  /// Get a mutable reference to a particular light by index. Returns `None` if no light exists at that index.
   pub fn get_light_mut(&mut self, light_index: usize) -> Option<&mut MdrLight> {
     self.lights.get_mut(light_index)
   }
 
+  /// Returns an array containing a copy of the light set's data.
   pub fn get_light_array(&self) -> [MdrLight; MAX_POINT_LIGHTS] {
     let mut light_array = [MdrLight::unused(); MAX_POINT_LIGHTS];
     for i in 0..self.light_count {
@@ -84,7 +89,17 @@ impl MdrLightSet {
     light_array
   }
 
+  /// Get the number of lights in the set.
   pub fn get_count(&self) -> u32 {
     self.light_count as u32
+  }
+}
+
+impl Default for MdrLightSet {
+  fn default() -> Self {
+    Self {
+      lights: Vec::<MdrLight>::with_capacity(MAX_POINT_LIGHTS),
+      light_count: 0,
+    }
   }
 }

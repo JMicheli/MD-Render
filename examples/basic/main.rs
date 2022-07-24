@@ -212,7 +212,7 @@ fn main() {
       "sphere_mat",
     )
     .unwrap();
-  let cube_mat = engine
+  let plane_mat = engine
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
@@ -222,10 +222,10 @@ fn main() {
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
-      "cube_mat",
+      "plane_mat",
     )
     .unwrap();
-  let plane_mat = engine
+  let cube_mat = engine
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
@@ -235,7 +235,7 @@ fn main() {
         specular_color: MdrRgb::white(),
         shininess: 20.0,
       },
-      "plane_mat",
+      "cube_mat",
     )
     .unwrap();
 
