@@ -151,37 +151,37 @@ fn main() {
     )
     .unwrap();
   // Red fabric
-  let red_fabric_base_color = engine
+  let white_bricks_base_color = engine
     .manage_resources()
     .load_texture(
       MdrTextureCreateInfo {
-        source: asset("textures/red_fabric/base_color.png").as_str(),
+        source: asset("textures/white_bricks/base_color.png").as_str(),
         color_type: MdrColorType::SRGBA,
         sampler_mode: MdrSamplerMode::Repeat,
       },
-      "red_fabric_base_color",
+      "white_bricks_base_color",
     )
     .unwrap();
-  let red_fabric_roughness = engine
+  let white_bricks_roughness = engine
     .manage_resources()
     .load_texture(
       MdrTextureCreateInfo {
-        source: asset("textures/red_fabric/roughness.png").as_str(),
+        source: asset("textures/white_bricks/roughness.png").as_str(),
         color_type: MdrColorType::NonColorData,
         sampler_mode: MdrSamplerMode::Repeat,
       },
-      "red_fabric_roughness",
+      "white_bricks_roughness",
     )
     .unwrap();
-  let red_fabric_normal = engine
+  let white_bricks_normal = engine
     .manage_resources()
     .load_texture(
       MdrTextureCreateInfo {
-        source: asset("textures/red_fabric/normal.png").as_str(),
+        source: asset("textures/white_bricks/normal.png").as_str(),
         color_type: MdrColorType::NonColorData,
         sampler_mode: MdrSamplerMode::Repeat,
       },
-      "red_fabric_normal",
+      "white_bricks_normal",
     )
     .unwrap();
 
@@ -190,9 +190,9 @@ fn main() {
     .manage_resources()
     .create_material(
       MdrMaterialCreateInfo {
-        diffuse: red_fabric_base_color,
-        roughness: red_fabric_roughness,
-        normal: red_fabric_normal,
+        diffuse: white_bricks_base_color,
+        roughness: white_bricks_roughness,
+        normal: white_bricks_normal,
         specular_color: MdrRgb::white(),
         shininess: 2.0,
       },
