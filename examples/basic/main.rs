@@ -16,7 +16,7 @@ use utils::{asset, DEBUG_ENABLED, MDR_LOG_LEVEL};
 
 // Consts for this example
 const LIGHT_MOV_SPEED: f32 = 1.0;
-const LIGHT_BRIGHTNESS: f32 = 2.0;
+const LIGHT_BRIGHTNESS: f32 = 0.75;
 const CAMERA_MOV_SPEED: f32 = 0.5;
 const CAMERA_ROT_SPEED: f32 = 0.01;
 

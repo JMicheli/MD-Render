@@ -11,7 +11,6 @@ layout(location = 0) in vec3 v_position;
 layout(location = 1) in vec2 v_uv;
 layout(location = 2) in mat3 v_TBN;
 
-
 layout(location = 0) out vec4 f_color;
 
 // Input buffer objects
@@ -63,66 +62,50 @@ layout(set = 1, binding = 2) uniform sampler2D roughness_map;
 // Normal map for material
 layout(set = 1, binding = 3) uniform sampler2D normal_map;
 
-///////////////////////
-//TODO Remove test code
-///////////////////////
-const float ambient_strength = 0.1;
-
-// Lighting functions
-// //////////////////
-vec3 calculate_point_light_contribution(PointLightData light, vec3 specular_strength, vec3 N, vec3 V);
-
 // Shader Entry Point
 // //////////////////
 void main() {
-  // Calculate normalized directional vectors for lighting
-  // Surface normal from normal map and TBN
-  vec3 N = texture(normal_map, v_uv).xyz;
-  N = N * 2.0 - 1.0;
-  N = normalize(v_TBN * N);
-  // Direction to viewer
-  vec3 V = normalize(scene_data.camera.position - v_position);
+  vec3 diffuse_color = texture(diffuse_map, v_uv).xyz;
+  float specular_strength = material.shininess * texture(roughness_map, v_uv).x;
 
-  // Sample diffuse map to get color
-  vec4 diffuse_color = texture(diffuse_map, v_uv);
-  // Sample specular map to get specular strength
-  vec3 specular_strength = vec3(1.0) - texture(roughness_map, v_uv).xyx;
-
+  // Loop over all the scene lights, accumulating the result
   vec3 result = vec3(0.0);
   for (int i = 0; i < scene_data.point_light_count; i++) {
-    result += calculate_point_light_contribution(scene_data.point_lights[i], specular_strength, N, V) * diffuse_color.xyz;
-  }
+    vec3 light_position = scene_data.point_lights[i].position;
+    vec3 light_color = scene_data.point_lights[i].color * scene_data.point_lights[i].brightness;
 
-  // Perform gamma correction
-  vec3 gamma_corrected_result = pow(result, vec3(1.0/GAMMA_FACTOR));
+    // ambient
+    vec3 ambient = light_color * diffuse_color;
+    
+    // diffuse 
+    // Surface normal from normal map and TBN
+    vec3 N = texture(normal_map, v_uv).xyz;
+    N = N * 2.0 - 1.0;
+    N = normalize(v_TBN * N);
+    vec3 L = normalize(light_position - v_position);
+    float diff = max(dot(N, L), 0.0);
+    vec3 diffuse = light_color * diff * diffuse_color;
+    
+    // specular
+    vec3 V = normalize(scene_data.camera.position - v_position);
+    vec3 H = normalize(L + V); 
+    float spec = pow(max(dot(N, H), 0.0), specular_strength);
+    vec3 specular = light_color * spec * material.specular_color;  
+        
+    result += ambient + diffuse + specular;
+  } 
 
-  f_color = vec4(gamma_corrected_result, diffuse_color.w);
-}
-
-// Impl lighting functions
-// ///////////////////////
-
-vec3 calculate_point_light_contribution(PointLightData light, vec3 specular_strength, vec3 N, vec3 V) {
-  // Light-specific direction vectors
-  // Direction to light
-  vec3 L = normalize(light.position - v_position);
-  // Blinn-Phong halfway vector
-  vec3 H = normalize(L + V);
-
-  // Light color adjusted by brightness
-  vec3 light_color = light.color * light.brightness;
-
-  // Blinn-Phong BRDF
-  // Ambient contribution
-  vec3 ambient = ambient_strength * light_color;
   
-  // Diffuse contribution
-  float diffusion_coefficient = max(dot(N, L), 0.0);
-  vec3 diffuse = diffusion_coefficient * light_color;
+  result = pow(result, vec3(1.0 / GAMMA_FACTOR));
+  f_color = vec4(result, 1.0);
 
-  // Specular contribution
-  float specular_coefficient = pow(max(dot(N, H), 0.0), material.shininess);
-  vec3 specular = specular_strength * light_color * specular_coefficient ;
-
-  return (ambient + diffuse + specular);
+  // ///////////////
+  // IGNORE
+  // ///////////////
+  // These are just to keep it from crashing for now
+  uint i = scene_data.point_light_count;
+  float s = material.shininess;
+  vec4 c1 = texture(diffuse_map, v_uv);
+  vec4 c2 = texture(roughness_map, v_uv);
+  vec4 c3 = texture(normal_map, v_uv);
 }

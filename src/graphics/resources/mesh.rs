@@ -92,6 +92,8 @@ pub fn open_obj(path: &str) -> Option<MdrMeshData> {
   })
 }
 
+/// Calculates a matrix of tangent vector values from input vectors containing
+/// a mesh's positions, uvs, and indices.
 fn calculate_mesh_tangents(
   mesh_positions: &Vec<MdrVertex_pos>,
   mesh_uvs: &Vec<MdrVertex_uv>,
@@ -150,6 +152,8 @@ fn calculate_mesh_tangents(
   tangent_data
 }
 
+/// Calculates the tangent vector for `target_vert` based on the
+/// co-triangular vertices `v2` and `v3`.
 fn calculate_tangent(
   target_vert: (MdrVertex_pos, MdrVertex_uv),
   v2: (MdrVertex_pos, MdrVertex_uv),

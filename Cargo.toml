@@ -10,7 +10,7 @@ image = "0.24.0"
 log = "0.4.17"
 nalgebra = "0.31.0"
 tobj = "3.2.2"
-vulkano = { version = "0.30.0", path = "./vendor/vulkano/vulkano" }
-vulkano-shaders = { version = "0.30.0", path = "./vendor/vulkano/vulkano-shaders" }
-vulkano-win = { version = "0.30.0", path = "./vendor/vulkano/vulkano-win" }
+vulkano = "0.30.0"
+vulkano-shaders = "0.30.0"
+vulkano-win = "0.30.0"
 winit = "0.26.1"

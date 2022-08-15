@@ -63,9 +63,9 @@ void main() {
 
   // Calculate surface normal at input vertex
   // TODO fix to use transpose inverse (or probably just remove nonuniform scaling)
-  vec3 normal = normalize(mat3(scene_data.camera.view) * a_normal);
+  vec3 normal = normalize(mat3(object.transformation_matrix) * a_normal);
   // Write tangent and bitangent vectors for normal mapping
-  vec3 tangent = normalize(mat3(scene_data.camera.view) * a_tangent);
+  vec3 tangent = normalize(mat3(object.transformation_matrix) * a_tangent);
   // Gram-Schmidt re-orthogonalization of the tangent with respect to the normal
   tangent = normalize(tangent - dot(tangent, normal) * normal);
   vec3 bitangent = normalize(cross(tangent, normal));

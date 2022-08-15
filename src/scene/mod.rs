@@ -1,13 +1,13 @@
 mod camera;
-mod light;
+mod lighting;
 mod object;
 pub mod transform;
 
 pub use camera::MdrCamera;
-pub use light::MdrLight;
+pub use lighting::MdrLight;
 pub use object::MdrRenderObject;
 
-use self::light::MdrLightSet;
+use self::lighting::MdrLightSet;
 
 pub struct MdrScene {
   pub camera: MdrCamera,
