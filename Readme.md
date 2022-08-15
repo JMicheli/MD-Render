@@ -11,7 +11,7 @@ Because the engine is in active development, it is recommended to build the exam
 
 ### About the example
 
-The example should display a simple scene containing a red, high-poly version of the [Blender monkey mesh](https://docs.blender.org/manual/en/latest/modeling/meshes/primitives.html#monkey) (her name is Suzanne), a green icosphere, a blue cube, and a grey ground plane, all lit by one point light.
+The example should display a simple scene containing a high-poly version of the [Blender monkey mesh](https://docs.blender.org/manual/en/latest/modeling/meshes/primitives.html#monkey) (her name is Suzanne), an icosphere, a cube, and a ground plane, all lit by one point light.
 
 The scene provides very rudimentary controls, with the <kbd>W</kbd>, <kbd>A</kbd>, <kbd>S</kbd>, and <kbd>D</kbd> keys controlling directional movement along the scene's `x` and `z` basis vectors (_not_ along the camera's forward axis), and the mouse controlling rotation of the camera when <kbd>RMB</kbd> is held. The arrow keys can also be used to move the point light along the same directions as the camera.
 
